@@ -294,28 +294,39 @@ class BillEditForm(Widget):
         self.w_checked = Checkbox(tr("f_paid_checked"), value=b.is_checked,
                                   id=f"{self.prefix}-paidChecked")
         self.w_amount = self._inp("bAmount", b.bAmount, placeholder="0.00")
+
+        cur_val = b.bCurrency if b.bCurrency in CURRENCIES else CURRENCIES[0]
         self.w_currency = Select([(c, c) for c in CURRENCIES],
-                                 value=b.bCurrency if b.bCurrency in CURRENCIES else None,
-                                 allow_blank=True, prompt="–", id=f"{self.prefix}-bCurrency")
-        self.w_account = self._inp("bAccount", b.bAccount, placeholder="CH12 1234 1234 1234 1234 4")
-        self.w_reference = self._inp("bReference", b.bReference, placeholder="21 00000 00000 …")
+                                 value=cur_val, allow_blank=True, prompt="–",
+                                 id=f"{self.prefix}-bCurrency")
+
+        self.w_account = self._inp("bAccount", b.bAccount,
+                                   placeholder="CH12 1234 1234 1234 1234 4")
+        self.w_reference = self._inp("bReference", b.bReference,
+                                     placeholder="21 00000 00000 …")
         self.w_note = self._inp("note", b.note)
         self.w_dname = self._inp("dName", b.dName)
         self.w_dstreet = self._inp("dStreet", b.dStreet)
         self.w_dnr = self._inp("dBuildingNr", b.dBuildingNr)
         self.w_dpc = self._inp("dPostalCode", b.dPostalCode)
         self.w_dcity = self._inp("dCity", b.dCity)
+
+        dc_val = b.dCountry if b.dCountry in COUNTRIES else COUNTRIES[0]
         self.w_dcountry = Select([(c, c) for c in COUNTRIES],
-                                 value=b.dCountry if b.dCountry in COUNTRIES else None,
-                                 allow_blank=True, prompt="–", id=f"{self.prefix}-dCountry")
+                                 value=dc_val, allow_blank=True, prompt="–",
+                                 id=f"{self.prefix}-dCountry")
+
         self.w_cname = self._inp("cName", b.cName)
         self.w_cstreet = self._inp("cStreet", b.cStreet)
         self.w_cnr = self._inp("cBuildingNr", b.cBuildingNr)
         self.w_cpc = self._inp("cPostalCode", b.cPostalCode)
         self.w_ccity = self._inp("cCity", b.cCity)
+
+        cc_val = b.cCountry if b.cCountry in COUNTRIES else COUNTRIES[0]
         self.w_ccountry = Select([(c, c) for c in COUNTRIES],
-                                 value=b.cCountry if b.cCountry in COUNTRIES else None,
-                                 allow_blank=True, prompt="–", id=f"{self.prefix}-cCountry")
+                                 value=cc_val, allow_blank=True, prompt="–",
+                                 id=f"{self.prefix}-cCountry")
+
         self.w_pnote = self._inp("privateNote", b.privateNote)
 
     def compose(self) -> ComposeResult:
