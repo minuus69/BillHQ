@@ -1,0 +1,3 @@
+description,amount,currency,account,dName,dStreet,dBuildingNr,dPostalCode,dCity,dCountry
+Steuerrechnung,1250,CHF,CH33 3333 3333 3333 3333 3,Steueramt Zürich,Sihlstrasse,23,8001,Zürich,CH
+Stromrechnung,85.4,CHF,CH44 4444 4444 4444 4444 4,EWZ,Technoparkstrasse,1,8005,Zürich,CH

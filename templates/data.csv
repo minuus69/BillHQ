@@ -1,0 +1,4 @@
+description,dueDate,paidDate,paidWith,paidChecked,bAmount,bCurrency,bAccount,bReference,note,dName,dStreet,dBuildingNr,dPostalCode,dCity,dCountry,cName,cStreet,cBuildingNr,cPostalCode,cCity,cCountry,privateNote
+Steueramt: Steuerbestätigung,2026-08-19,2026-08-11,ZKB,True,1250.00,CHF,CH93 0076 2011 6238 5295 9,69 00000 12345 12345 12345 12345,Steuerrechnung,Steueramt Zürich,Sihlstrasse,23,8001,Zürich,CH,Max Mustermann,Musterweg,69,8000,Zürich,CH,
+Online Shop: Bestellung #4711,2026-07-20,,,False,89.99,EUR,CH12 1234 1234 1234 1234 4,RF18 5390 0754 7018 5,,Beispiel Handel AG,Bahnhofstrasse,1,3000,Bern,CH,Max Mustermann,Musterweg,69,8000,Zürich,CH,
+Swisscom: Abo,2026-07-22,2026-07-23,TWINT,True,79.9,CHF,CH44 3199 9123 0008 8901 2,21 00000 00003 13947 14300 09017,,Swisscom AG,Alte Tiefenaustrasse,6,3048,Worblaufen,CH,Max Mustermann,Musterweg,69,8000,Zürich,CH,
