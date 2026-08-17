@@ -1,0 +1,9 @@
+[settings]
+language = "en"
+date_format = "dd.mm.yyyy"
+default_currency = "CHF"
+default_country = "CH"
+sort_by = "dueDate"
+sort_order = "asc"
+loglevel = "debug"
+logsize = 2048

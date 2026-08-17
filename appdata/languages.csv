@@ -1,0 +1,101 @@
+key,en,de,ch,it,fr,rm,sr,ru,jp,cn,fn
+app_title,Bill Manager,Rechnungsverwaltung,Rächnigsverwautig,Gestore Fatture,Gestionnaire de factures,Administraziun da quints,Менаџер рачуна,Менеджер счетов,請求書マネージャー,账单管理器,Quest Tracker
+menu_all_bills,All bills,Alle Rechnungen,Aui Rächnige,Tutte le fatture,Toutes les factures,Tuts quints,Сви рачуни,Все счета,全ての請求書,所有账单,All Quests
+menu_new_bill,New bill,Neue Rechnung,Neui Rächnig,Nuova fattura,Nouvelle facture,Nov quint,Нови рачун,Новый счёт,新しい請求書,新账单,New Quest
+menu_summary,Summary,Übersicht,Übersicht,Riepilogo,Résumé,Survista,Преглед,Сводка,概要,摘要,Victory Royale Stats
+menu_settings,Settings,Einstellungen,Istellige,Impostazioni,Paramètres,Configuraziun,Подешавања,Настройки,設定,设置,Lobby Settings
+menu_manage,Manage,Verwalten,Verwaute,Gestisci,Gérer,Administrar,Управљање,Управление,管理,管理,Locker
+btn_show_qr,SHOW QR,QR ANZEIGEN,QR AAZEIGE,MOSTRA QR,AFFICHER QR,MUSSAR QR,ПРИКАЖИ QR,ПОКАЗАТЬ QR,QR表示,显示二维码,QR Emote
+btn_pay,PAY,BEZAHLEN,ZAALE,PAGA,PAYER,PAGAR,ПЛАТИ,ОПЛАТИТЬ,支払い,支付,Clutch Up
+btn_edit,EDIT,BEARBEITEN,BEARBEITE,MODIFICA,MODIFIER,MODIFICAR,ИЗМЕНИ,ИЗМЕНИТЬ,編集,编辑,Edit Build
+btn_save,SAVE,SPEICHERN,SPICHERE,SALVA,ENREGISTRER,MEMORISAR,САЧУВАЈ,СОХРАНИТЬ,保存,保存,Save Progress
+btn_cancel,CANCEL,ABBRECHEN,ABBRÄCHE,ANNULLA,ANNULER,INTERRUMPER,ОДУСТАНИ,ОТМЕНА,キャンセル,取消,Bail
+btn_ok,OK,OK,OK,OK,OK,OK,У РЕДУ,ОК,OK,确定,GG
+btn_delete,DELETE,LÖSCHEN,LÖSCHE,ELIMINA,SUPPRIMER,STIZZAR,ОБРИШИ,УДАЛИТЬ,削除,删除,Eliminate
+btn_add,ADD,HINZUFÜGEN,DERZUE,AGGIUNGI,AJOUTER,AGIUNTAR,ДОДАЈ,ДОБАВИТЬ,追加,添加,Add to Squad
+btn_yes,YES,JA,JAA,SÌ,OUI,GEA,ДА,ДА,はい,是,GG
+btn_no,NO,NEIN,NEI,NO,NON,NA,НЕ,НЕТ,いいえ,否,Nah
+status_open,OPEN,OFFEN,OFFE,APERTO,OUVERT,AVERT,ОТВОРЕНО,ОТКРЫТО,未払い,未付,In the Storm
+status_paid,PAID,BEZAHLT,ZAALT,PAGATO,PAYÉ,PAGÀ,ПЛАЋЕНО,ОПЛАЧЕНО,支払済,已付,Victory Royale
+status_overdue,OVERDUE,ÜBERFÄLLIG,ÜBERFÄLLIG,SCADUTO,EN RETARD,SURTERMIN,ПРОБИЈЕНО,ПРОСРОЧЕНО,期限超過,逾期,Storm Damage!
+f_description,Description,Beschreibung,Beschriibig,Descrizione,Description,Descripziun,Опис,Описание,説明,描述,Quest Info
+f_due_date,Due date,Fällig am,Fällig am,Scadenza,Date d'échéance,Data da scadenza,Рок,Срок,期日,到期日,Storm Timer
+f_paid_date,Paid date,Bezahlt am,Zaut am,Data pagamento,Date de paiement,Data da pajament,Датум плаћања,Дата оплаты,支払日,支付日期,Clutch Date
+f_paid_with,Paid with,Bezahlt mit,Zaut mit,Pagato con,Payé avec,Pagà cun,Плаћено са,Оплачено,支払方法,支付方式,Clutch Method
+f_paid_checked,Payment checked,Zahlung kontrolliert,Zahlig prüeft,Pagamento verificato,Paiement vérifié,Pajament controllà,Плаћање проверено,Оплата проверена,支払い確認済み,支付已确认,Loot Verified
+f_amount,Amount,Betrag,Betrag,Importo,Montant,Import,Износ,Сумма,金額,金额,V-Bucks
+f_currency,Currency,Währung,Währig,Valuta,Devise,Valuta,Валута,Валюта,通貨,货币,Currency
+f_account,Account (IBAN),Konto (IBAN),Konto (IBAN),Conto (IBAN),Compte (IBAN),Quint (IBAN),Рачун (ИБАН),Счёт (IBAN),口座（IBAN）,账户（IBAN）,Loot Vault
+f_account_iban,Account (IBAN),Konto (IBAN),Konto (IBAN),Conto (IBAN),Compte (IBAN),Quint (IBAN),Рачун (ИБАН),Счёт (IBAN),口座（IBAN）,账户（IBAN）,Loot Vault
+f_reference,Reference,Referenz,Referänz,Riferimento,Référence,Referenza,Референца,Референс,参照番号,参考号,Loot Code
+f_note,Note,Bemerkung,Bemerkig,Nota,Note,Nota,Белешка,Примечание,メモ,备注,Ping
+f_dname,Creditor,Gläubiger,Gläubiger,Creditore,Créancier,Creditur,Поверилац,Кредитор,債権者,债权人,Creditor
+f_cname,Debtor,Schuldner,Schuldner,Debitore,Débiteur,Debitur,Дужник,Должник,債務者,债务人,Debtor
+f_street,Street,Strasse,Strasse,Via,Rue,Via,Улица,Улица,通り,街道,POI Street
+f_building_nr,Nr.,Nr.,Nr.,N°,N°,Nr.,Број,Номер,番号,号,Tile #
+f_postal_code,Postal code,PLZ,PLZ,CAP,Code postal,Code postal,Поштански број,Почтовый индекс,郵便番号,邮政编码,Zone Code
+f_city,City,Ort,Ort,Città,Ville,Citad,Град,Город,市,城市,Named Location
+f_country,Country,Land,Land,Paese,Pays,Pais,Земља,Страна,国,国家,Island
+f_private_note,Private note,Private Notiz,Privati Notiz,Nota privata,Note privée,Nota privata,Приватна белешка,Личная заметка,プライベートメモ,私人备注,Secret Ping
+bill_section,Bill,Rechnung,Rächnig,Fattura,Facture,Quint,Рачун,Счёт,請求書,账单,Quest
+payment_section,Payment,Zahlung,Zahlig,Pagamento,Paiement,Pajament,Плаћање,Оплата,支払い,支付,Clutch Info
+debtor_section,Creditor,Gläubiger,Gläubiger,Creditore,Créancier,Creditur,Поверилац,Кредитор,債権者,债权人,Creditor
+creditor_section,Debtor,Schuldner,Schuldner,Debitore,Débiteur,Debitur,Дужник,Должник,債務者,债务人,Debtor
+summary_open_total,Open bills (total),Offene Rechnungen (Total),Offeni Rächnige (Total),Fatture aperte (totale),Factures ouvertes (total),Quints averts (total),Отворени рачуни (укупно),Открытые счета (всего),未払い請求書（合計）,未付账单（总计）,Storm Quests (total)
+summary_due14,Due within 14 days,Innert 14 Tagen fällig,Innert 14 Täg fällig,In scadenza entro 14 giorni,Échéance dans les 14 jours,Scadenza en 14 dis,Рок у року од 14 дана,Срок в течение 14 дней,14日以内に期日,14天内到期,Storm Closing in 14 Days
+summary_due30,Due in 15-30 days,In 15-30 Tagen fällig,I 15-30 Täg fällig,In scadenza in 15-30 giorni,Échéance dans 15-30 jours,Scadenza en 15-30 dis,Рок за 15-30 дана,Срок через 15-30 дней,15〜30日後に期日,15-30天后到期,Storm in 15-30 Days
+summary_paid_year,Paid this year,Dieses Jahr bezahlt,Dies Jahr zaut,Pagate quest'anno,Payées cette année,Pagà quest onn,Плаћено ове године,Оплачено в этом году,今年支払済み,今年已付,Victory Royales This Season
+summary_no_open,No open bills - everything paid!,Keine offenen Rechnungen - alles bezahlt!,Kei offeni Rächnige - aus zaut!,Nessuna fattura aperta - tutto pagato!,Aucune facture ouverte - tout payé!,Nagin quints averts - tut pagà!,Нема отворених рачуна - све плаћено!,Нет открытых счетов - всё оплачено!,未払い請求書なし - すべて支払い済み！,无未付账单 - 全部已付！,All Quests Done - GG!
+summary_count,{n} bill(s),{n} Rechnung(en),{n} Rächnig(e),{n} fattura/e,{n} facture(s),{n} quint(s),{n} рачун(а),{n} счёт(ов),{n}件の請求書,{n}个账单,{n} Quest(s)
+set_language,Language,Sprache,Spraach,Lingua,Langue,Lingua,Језик,Язык,言語,语言,Language Emote
+set_date_format,Date format,Datumsformat,Datumsformat,Formato data,Format de date,Format da data,Формат датума,Формат даты,日付形式,日期格式,Timer Format
+set_currency,Default currency,Standardwährung,Standardwährig,Valuta predefinita,Devise par défaut,Valuta standard,Стандардна валута,Валюта по умолчанию,デフォルト通貨,默认货币,Default V-Bucks
+set_country,Default country,Standardland,Standardland,Paese predefinito,Pays par défaut,Pais standard,Стандардна земља,Страна по умолчанию,デフォルト国,默认国家,Default Island
+set_sort_by,Sort by,Sortieren nach,Sortiere nach,Ordina per,Trier par,Zavrar tenor,Сортирај по,Сортировать по,並べ替え,排序方式,Sort Loot By
+set_sort_order,Sort order,Sortierreihenfolge,Sortierreiefoug,Ordine di ordinamento,Ordre de tri,Ordinaziun,Редослед сортирања,Порядок сортировки,並び順,排序顺序,Loot Order
+set_loglevel,Log level,Log-Stufe,Log-Stuefe,Livello di log,Niveau de log,Nivel da log,Ниво логова,Уровень логов,ログレベル,日志级别,Feed Level
+set_logsize,Log size (lines),Log-Grösse (Zeilen),Log-Gröössi (Zile),Dimensione log (righe),Taille du log (lignes),Grondezza dal log,Величина логова,Размер лога,ログサイズ（行数）,日志大小（行数）,Feed Size
+sort_due_date,Due date,Fälligkeitsdatum,Fälligkeitsdatum,Data di scadenza,Date d'échéance,Data da scadenza,Датум рока,Срок платежа,期日,到期日,Storm Timer
+sort_paid_date,Paid date,Zahldatum,Zahldatum,Data di pagamento,Date de paiement,Data da pajament,Датум плаћања,Дата оплаты,支払日,支付日期,Clutch Date
+sort_description,Description,Beschreibung,Beschriibig,Descrizione,Description,Descripziun,Опис,Описание,説明,描述,Quest Info
+sort_asc,ascending,aufsteigend,ufstiigend,crescente,croissant,ascendent,растуће,по возрастанию,昇順,升序,Low to High
+sort_desc,descending,absteigend,abstiigend,decrescente,décroissant,descendent,опадајуће,по убыванию,降順,降序,High to Low
+pay_title,Pay bill,Rechnung bezahlen,Rächnig zaale,Paga fattura,Payer la facture,Pagar il quint,Плати рачун,Оплатить счёт,請求書の支払い,支付账单,Clutch This Quest
+new_bill_title,New bill,Neue Rechnung,Neui Rächnig,Nuova fattura,Nouvelle facture,Nov quint,Нови рачун,Новый счёт,新しい請求書,新账单,New Quest
+edit_bill_title,Edit bill,Rechnung bearbeiten,Rächnig bearbeite,Modifica fattura,Modifier la facture,Modificar il quint,Измени рачун,Изменить счёт,請求書を編集,编辑账单,Edit Quest
+tpl_debtor,Creditor template,Gläubiger-Vorlage,Gläubiger-Vorlag,Modello creditore,Modèle de créancier,Model da creditur,Шаблон повериоца,Шаблон кредитора,債権者テンプレート,债权人模板,Creditor Skin
+tpl_creditor,Debtor template,Schuldner-Vorlage,Schuldner-Vorlag,Modello debitore,Modèle de débiteur,Model da debitur,Шаблон дужника,Шаблон должника,債務者テンプレート,债务人模板,Debtor Skin
+tpl_none,none,keine,kei,nessuno,aucun,nagin,ниједан,нет,なし,无,Default Skin
+hint_nav,Up/Down/Wheel: navigate · Enter: select · Esc: back,↑/↓/Rad: navigieren · Enter: wählen · Esc: zurück,↑/↓/Rad: navigiere · Enter: wähle · Esc: zrugg,↑/↓/Ruota: naviga · Enter: seleziona · Esc: indietro,↑/↓/Roulette: naviguer · Enter: sélectionner · Esc: retour,↑/↓/Roda: navigar · Enter: tscherner · Esc: enavos,↑/↓/Колутак: навигација · Ентер: изабери · Еск: назад,↑/↓/Колесо: навигация · Enter: выбор · Esc: назад,↑/↓/ホイール: ナビゲート · Enter: 選択 · Esc: 戻る,↑/↓/滚轮: 导航 · Enter: 选择 · Esc: 返回,WASD: Move · Enter: Interact · Esc: Bail
+hint_menu,Select a menu item,Menüpunkt wählen,Menüpunkt wähle,Seleziona una voce di menu,Sélectionnez un élément de menu,Tscherner in punct dal menu,Изаберите ставку менија,Выберите пункт меню,メニュー項目を選択,选择菜单项,Pick Your Loadout
+msg_settings_saved,Settings saved,Einstellungen gespeichert,Istellige gspicheret,Impostazioni salvate,Paramètres enregistrés,Configuraziun memorisada,Подешавања сачувана,Настройки сохранены,設定を保存しました,设置已保存,Settings Saved - GG
+msg_bill_saved,Bill saved,Rechnung gespeichert,Rächnig gspicheret,Fattura salvata,Facture enregistrée,Quint memorisà,Рачун сачуван,Счёт сохранён,請求書を保存しました,账单已保存,Quest Saved
+msg_paid,Bill marked as paid,Rechnung als bezahlt markiert,Rächnig aus zaut markiert,Fattura segnata come pagata,Facture marquée comme payée,Quint marcà sco pagà,Рачун означен као плаћен,Счёт отмечен как оплаченный,請求書を支払済みとしてマーク,账单已标记为已付,Quest Clutched - W!
+msg_missing_required,Missing required fields: {fields},Pflichtfelder fehlen: {fields},Pflichtfälder fähle: {fields},Campi obbligatori mancanti: {fields},Champs obligatoires manquants: {fields},Tschamps obligatorics mancan: {fields},Недостају обавезна поља: {fields},Отсутствуют обязательные поля: {fields},必須項目が不足: {fields},缺少必填字段: {fields},Missing Loot: {fields}
+msg_invalid_amount,Invalid amount,Ungültiger Betrag,Ungültige Betrag,Importo non valido,Montant invalide,Import nunvalid,Неважећи износ,Неверная сумма,無効な金額,无效金额,Invalid V-Bucks
+msg_invalid_date,Invalid date,Ungültiges Datum,Ungültigs Datum,Data non valida,Date invalide,Data nunvalida,Неважећи датум,Неверная дата,無効な日付,无效日期,Invalid Timer
+msg_qr_created,QR bill created and opened,QR-Rechnung erstellt und geöffnet,QR-Rächnig erstellt und ufgmacht,Fattura QR creata e aperta,Facture QR créée et ouverte,Quint QR creà e avert,QR рачун креиран и отворен,QR-счёт создан и открыт,QR請求書を作成して開きました,QR账单已创建并打开,QR Emote Deployed
+err_qr_failed,QR generation failed: {err},QR-Erstellung fehlgeschlagen: {err},QR-Erstellung fägschlage: {err},Generazione QR fallita: {err},Échec de la génération QR: {err},Creaziun dal QR fallida: {err},Креирање QR није успело: {err},Не удалось создать QR: {err},QR生成に失敗: {err},QR生成失败: {err},QR Emote Failed: {err}
+bills_empty,No bills yet - add one via 'New bill'.,Noch keine Rechnungen - erfasse eine unter 'Neue Rechnung'.,No kei Rächnige - erfass eini under 'Neui Rächnig'.,Nessuna fattura - aggiungine una con 'Nuova fattura'.,Aucune facture - ajoutez-en une via 'Nouvelle facture'.,Nagin quints - agiuntar in via 'Nov quint'.,Нема рачуна - додајте преко 'Нови рачун'.,Нет счетов - добавьте через 'Новый счёт'.,請求書がありません - 「新しい請求書」で追加してください,暂无账单 - 通过「新账单」添加,No Quests Yet - Drop One!
+confirm_delete_title,Delete bill,Rechnung löschen,Rächnig lösche,Elimina fattura,Supprimer la facture,Stizzar il quint,Обриши рачун,Удалить счёт,請求書を削除,删除账单,Eliminate Quest
+confirm_delete_msg,Are you sure you want to delete this bill?,Diese Rechnung wirklich löschen?,Die Rächnig würkle lösche?,Sei sicuro di voler eliminare questa fattura?,Êtes-vous sûr de vouloir supprimer cette facture?,Vuls ti propi stizzar quest quint?,Да ли сте сигурни?,Вы уверены?,この請求書を削除してもよろしいですか？,确定要删除此账单吗？,Eliminate this Quest? No undo!
+confirm_delete_entry,Delete this entry?,Diesen Eintrag wirklich löschen?,De Eintrag würkle lösche?,Eliminare questa voce?,Supprimer cette entrée?,Stizzar quest endataziun?,Обрисати овај унос?,Удалить эту запись?,このエントリを削除しますか？,删除此条目？,Eliminate this item?
+msg_deleted,Bill deleted,Rechnung gelöscht,Rächnig glöscht,Fattura eliminata,Facture supprimée,Quint stizzà,Рачун обрисан,Счёт удалён,請求書を削除しました,账单已删除,Quest Eliminated
+entry_added,Entry added,Eintrag hinzugefügt,Eintrag derzue,Emissione aggiunta,Entrée ajoutée,Endataziun agiuntada,Унос додат,Запись добавлена,エントリを追加しました,条目已添加,Item Added to Locker
+entry_deleted,Entry deleted,Eintrag gelöscht,Eintrag glöscht,Voce eliminata,Entrée supprimée,Endataziun stizzada,Унос обрисан,Запись удалена,エントリを削除しました,条目已删除,Item Eliminated
+add_debitor_title,Add creditor template,Gläubiger-Vorlage hinzufügen,Gläubiger-Vorlag derzue,Aggiungi modello creditore,Ajouter un modèle de créancier,Agiuntar model da creditur,Додај шаблон повериоца,Добавить шаблон кредитора,債権者テンプレートを追加,添加债权人模板,Add Creditor Skin
+add_creditor_title,Add debtor template,Schuldner-Vorlage hinzufügen,Schuldner-Vorlag derzue,Aggiungi modello debitore,Ajouter un modèle de débiteur,Agiuntar model da debitur,Додај шаблон дужника,Добавить шаблон должника,債務者テンプレートを追加,添加债务人模板,Add Debtor Skin
+manage_debitors,Creditor templates,Gläubiger-Vorlagen,Gläubiger-Vorlage,Modelli creditori,Modèles de créanciers,Models da creditur,Шаблони поверилаца,Шаблоны кредиторов,債権者テンプレート,债权人模板,Creditor Skins
+manage_creditors,Debtor templates,Schuldner-Vorlagen,Schuldner-Vorlage,Modelli debitori,Modèles de débiteurs,Models da debitur,Шаблони дужника,Шаблоны должников,債務者テンプレート,债务人模板,Debtor Skins
+entries_count,{n} entries,{n} Einträge,{n} Einträg,{n} voci,{n} entrées,{n} endataziuns,{n} унос(а),{n} записей,{n}件のエントリ,{n}个条目,{n} Items in Locker
+splash_title,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ
+splash_tagline,"your bills, handled.","deine Rechnungen, erledigt.","dini Rächnige, erledigt.","le tue fatture, gestite.","vos factures, gérées.","tes quints, manegià.","ваши рачуни, сређени.","ваши счета, улажены.","請求書、管理完了。","你的账单，搞定。","your quests, clutched."
+bills_search_placeholder,Search bills...,Rechnungen suchen...,Rächnige sueche...,Cerca fatture...,Rechercher factures...,Tschertgar quints...,Претражи рачуне...,Поиск счетов...,請求書を検索...,搜索账单...,Search Quests...
+menu_scan_bill,Scan Bill,Rechnung scannen,Rächnig scanne,Scansiona fattura,Scanner une facture,Scannar il quint,Скенирај рачун,Сканировать счёт,請求書スキャン,扫描账单,Scan for Loot
+scan_bill_title,Scan Bill,Rechnung scannen,Rächnig scanne,Scansiona fattura,Scanner une facture,Scannar il quint,Скенирај рачун,Сканировать счёт,請求書スキャン,扫描账单,Scan for Loot
+btn_load_qr,LOAD QR,QR LADEN,QR LADE,CARICA QR,CHARGER QR,CHARGIAR QR,УЧИТАЈ QR,ЗАГРУЗИТЬ QR,QR読み込み,加载二维码,Loot QR from File
+btn_scan_qr,SCAN QR,QR SCANNEN,QR SCANNE,SCANSIONA QR,SCANNER QR,SCANNAR QR,СКАНИРАЈ QR,СКАНИРОВАТЬ QR,QRスキャン,扫描二维码,Scan QR with Cam
+scan_processing,Processing...,Verarbeiten...,Verarbeite...,Elaborazione...,Traitement...,Elavurar...,Обрада...,Обработка...,処理中...,处理中...,Looting...
+scan_no_qr,No QR code found,Kein QR-Code gefunden,Kei QR-Code gfunde,Nessun QR trovato,Aucun QR trouvé,Nagin QR chattà,QR код није пронађен,QR-код не найден,QRコードが見つかりません,未找到二维码,No Loot Found
+scan_not_swiss,Not a Swiss QR bill,Keine Schweizer QR-Rechnung,Kei Schwiizer QR-Rächnig,Non è una fattura QR svizzera,Pas une facture QR suisse,Nagin quint QR svizzer,Није швајцарски QR рачун,Не швейцарский QR-счёт,スイスのQR請求書ではありません,不是瑞士QR账单,Not Valid Swiss Loot
+search_no_results,No results found,Keine Ergebnisse gefunden,Kei Ergebnis gfunde,Nessun risultato trovato,Aucun résultat trouvé,Nagins resultats chattas,Нема резултата,Результатов не найдено,結果が見つかりません,未找到结果,No Quests found
