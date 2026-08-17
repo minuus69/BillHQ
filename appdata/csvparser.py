@@ -104,16 +104,30 @@ class Bill:
 
 
 def bill_state(bill: Bill, today: date | None = None) -> str:
-    """'paid' | 'overdue' | 'open'"""
+    """Returns 'paid', 'overdue', or 'open'."""
     if bill.is_paid:
         return "paid"
-    iso = bill.dueDate.strip()
-    if iso:
+    raw = bill.dueDate.strip()
+    if not raw:
+        return "open"
+    # Try ISO first (fast path)
+    try:
+        d = date.fromisoformat(raw)
+        if d < (today or date.today()):
+            return "overdue"
+        return "open"
+    except ValueError:
+        pass
+    # Try common formats
+    for fmt in ("%d.%m.%Y", "%d.%m.%y", "%m/%d/%Y", "%m/%d/%y",
+                "%d/%m/%Y", "%d/%m/%y", "%Y/%m/%d"):
         try:
-            if date.fromisoformat(iso) < (today or date.today()):
+            d = datetime.strptime(raw, fmt).date()
+            if d < (today or date.today()):
                 return "overdue"
+            return "open"
         except ValueError:
-            pass
+            continue
     return "open"
 
 
