@@ -34,6 +34,7 @@ python app.py
 | mouse wheel | dito |
 | Enter  | Select/expand|
 | mouse click | dito |
+| Esc | Go back |
 | Ctrl+Q | Quit |
 
 
