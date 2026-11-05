@@ -1,4 +1,4 @@
-"""Managing the debitor and creditor template lists."""
+"""Managing the payee and payer template lists."""
 from __future__ import annotations
 
 from typing import NamedTuple
@@ -20,8 +20,8 @@ class ManageScreen(MenuScreen):
         return tr("menu_manage")
 
     def menu_items(self) -> list[MenuItem]:
-        return [MenuItem(tr("manage_debitors"), "debitor"),
-                MenuItem(tr("manage_creditors"), "creditor")]
+        return [MenuItem(tr("manage_payees"), "payee"),
+                MenuItem(tr("manage_payers"), "payer")]
 
     def menu_selected(self, key: str) -> None:
         self.app.push_screen(ManageListScreen(key))
@@ -36,7 +36,7 @@ class ManageListScreen(BackScreen):
 
     def __init__(self, kind: str):
         super().__init__()
-        self.kind = kind  # "debitor" or "creditor"
+        self.kind = kind  # "payee" or "payer"
         self.selected = 0
 
     @property
@@ -70,10 +70,10 @@ class ManageListScreen(BackScreen):
             await container.mount(item)
 
     def _entry_label(self, entry: dict) -> str:
-        if self.kind == "debitor":
-            parts = [entry.get("description", ""), entry.get("dName", "")]
+        if self.kind == "payee":
+            parts = [entry.get("description", ""), entry.get("payee_name", "")]
         else:
-            parts = [entry.get("cName", "")]
+            parts = [entry.get("payer_name", "")]
         return " · ".join(p for p in parts if p.strip()) or "–"
 
     def select_entry(self, index: int) -> None:
@@ -187,38 +187,38 @@ class TemplateFormScreen(BackScreen):
         self.app.pop_screen()
 
 
-class AddDebitorScreen(TemplateFormScreen):
-    kind = "debitor"
-    title_key = "add_debitor_title"
-    name_field = "dName"
-    name_label_key = "f_dname"
+class AddPayeeTemplateScreen(TemplateFormScreen):
+    kind = "payee"
+    title_key = "add_payee_title"
+    name_field = "payee_name"
+    name_label_key = "f_payee_name"
     fields = [
         TemplateField("description", "f_description"),
         TemplateField("amount", "f_amount", placeholder="0.00"),
         TemplateField("currency", "f_currency", CURRENCIES),
         TemplateField("account", "f_account_iban", placeholder="CH12 1234 1234 1234 1234 4"),
-        TemplateField("dName", "f_dname"),
-        TemplateField("dStreet", "f_street"),
-        TemplateField("dBuildingNr", "f_building_nr"),
-        TemplateField("dPostalCode", "f_postal_code"),
-        TemplateField("dCity", "f_city"),
-        TemplateField("dCountry", "f_country", COUNTRIES),
+        TemplateField("payee_name", "f_payee_name"),
+        TemplateField("payee_street", "f_street"),
+        TemplateField("payee_building_nr", "f_building_nr"),
+        TemplateField("payee_postal_code", "f_postal_code"),
+        TemplateField("payee_city", "f_city"),
+        TemplateField("payee_country", "f_country", COUNTRIES),
     ]
 
 
-class AddCreditorScreen(TemplateFormScreen):
-    kind = "creditor"
-    title_key = "add_creditor_title"
-    name_field = "cName"
-    name_label_key = "f_cname"
+class AddPayerTemplateScreen(TemplateFormScreen):
+    kind = "payer"
+    title_key = "add_payer_title"
+    name_field = "payer_name"
+    name_label_key = "f_payer_name"
     fields = [
-        TemplateField("cName", "f_cname"),
-        TemplateField("cStreet", "f_street"),
-        TemplateField("cBuildingNr", "f_building_nr"),
-        TemplateField("cPostalCode", "f_postal_code"),
-        TemplateField("cCity", "f_city"),
-        TemplateField("cCountry", "f_country", COUNTRIES),
+        TemplateField("payer_name", "f_payer_name"),
+        TemplateField("payer_street", "f_street"),
+        TemplateField("payer_building_nr", "f_building_nr"),
+        TemplateField("payer_postal_code", "f_postal_code"),
+        TemplateField("payer_city", "f_city"),
+        TemplateField("payer_country", "f_country", COUNTRIES),
     ]
 
 
-TEMPLATE_FORMS = {"debitor": AddDebitorScreen, "creditor": AddCreditorScreen}
+TEMPLATE_FORMS = {"payee": AddPayeeTemplateScreen, "payer": AddPayerTemplateScreen}

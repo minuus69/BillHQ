@@ -275,15 +275,15 @@ def generate_qr_bill(bill, settings, out_dir: Path, open_viewer: bool = True) ->
     except ImportError as exc:
         raise RuntimeError("package 'cairosvg' is missing - run: pip install cairosvg") from exc
 
-    currency = (bill.bCurrency or "").strip().upper()
+    currency = (bill.currency or "").strip().upper()
     if currency not in ("CHF", "EUR"):
         raise ValueError(f"Swiss QR bills only support CHF/EUR (bill has {currency!r})")
 
-    amount = parse_amount(bill.bAmount)
+    amount = parse_amount(bill.amount)
 
     # per spec: ALL SPACES MUST BE REMOVED from account and reference
-    account = (bill.bAccount or "").replace(" ", "")
-    reference = (bill.bReference or "").replace(" ", "")
+    account = (bill.account or "").replace(" ", "")
+    reference = (bill.reference or "").replace(" ", "")
     if not reference:
         reference_type = "NON"
     elif reference.upper().startswith("RF"):
@@ -292,15 +292,15 @@ def generate_qr_bill(bill, settings, out_dir: Path, open_viewer: bool = True) ->
         reference_type = "QRR"
 
     creditor = Creditor(
-        name=bill.dName, street=bill.dStreet, building_number=bill.dBuildingNr,
-        postal_code=bill.dPostalCode, city=bill.dCity, country=bill.dCountry,
+        name=bill.payee_name, street=bill.payee_street, building_number=bill.payee_building_nr,
+        postal_code=bill.payee_postal_code, city=bill.payee_city, country=bill.payee_country,
     )
-    # c* fields hold the person paying, which is optional on a QR bill
+    # the person paying is optional on a QR bill
     debtor = None
-    if (bill.cName or "").strip():
+    if (bill.payer_name or "").strip():
         debtor = UltimateDebtor(
-            name=bill.cName, street=bill.cStreet, building_number=bill.cBuildingNr,
-            postal_code=bill.cPostalCode, city=bill.cCity, country=bill.cCountry,
+            name=bill.payer_name, street=bill.payer_street, building_number=bill.payer_building_nr,
+            postal_code=bill.payer_postal_code, city=bill.payer_city, country=bill.payer_country,
         )
     qrbill = QRBill(
         account=account,
@@ -420,8 +420,7 @@ def format_reference(ref: str) -> str:
 def parse_swiss_qr_payload(text: str) -> dict:
     """Parse a Swiss QR bill payload (SPC) into bill field names.
 
-    Mapping: QR Creditor (receives money) -> d* fields (the company)
-             QR Ultimate Debtor (pays)    -> c* fields (the user)
+    The QR standard's creditor is our payee, its ultimate debtor is our payer.
     """
     lines = (text or "").replace("\r", "").split("\n")
     if len(lines) < 31 or lines[0].strip() != "SPC":
@@ -431,14 +430,14 @@ def parse_swiss_qr_payload(text: str) -> dict:
         return lines[i].strip() if i < len(lines) else ""
 
     return {
-        "bAccount": format_iban(g(3)),
-        # QR Creditor (lines 4-10) = the company = d* in this app
-        "dName": g(5), "dStreet": g(6), "dBuildingNr": g(7),
-        "dPostalCode": g(8), "dCity": g(9), "dCountry": g(10),
-        "bAmount": g(18), "bCurrency": g(19),
-        # QR Ultimate Debtor (lines 20-26) = the user = c* in this app
-        "cName": g(21), "cStreet": g(22), "cBuildingNr": g(23),
-        "cPostalCode": g(24), "cCity": g(25), "cCountry": g(26),
-        "bReference": format_reference(g(28)),
+        "account": format_iban(g(3)),
+        # QR creditor (lines 4-10)
+        "payee_name": g(5), "payee_street": g(6), "payee_building_nr": g(7),
+        "payee_postal_code": g(8), "payee_city": g(9), "payee_country": g(10),
+        "amount": g(18), "currency": g(19),
+        # QR ultimate debtor (lines 20-26)
+        "payer_name": g(21), "payer_street": g(22), "payer_building_nr": g(23),
+        "payer_postal_code": g(24), "payer_city": g(25), "payer_country": g(26),
+        "reference": format_reference(g(28)),
         "note": g(29),
     }

@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from appdata.csvparser import (
-    CREDITOR_FIELDS, DEBITOR_FIELDS, Bill, bootstrap_files, load_bills, load_settings,
+    PAYER_TEMPLATE_COLUMNS, PAYEE_TEMPLATE_COLUMNS, Bill, bootstrap_files, load_bills, load_settings,
     read_rows, save_bills, save_settings, sort_bills, write_rows,
 )
 from appdata.languages import set_language
@@ -24,8 +24,8 @@ class Core:
         self.logger = Logger(self.appdata / "log", self.settings.loglevel, self.settings.logsize)
 
         self.bills = load_bills(self.userdata / "data.csv")
-        self.debitors = read_rows(self.userdata / "debitorList.csv", DEBITOR_FIELDS)
-        self.creditors = read_rows(self.userdata / "creditorList.csv", CREDITOR_FIELDS)
+        self.payee_templates = read_rows(self.userdata / "debitorList.csv", PAYEE_TEMPLATE_COLUMNS)
+        self.payer_templates = read_rows(self.userdata / "creditorList.csv", PAYER_TEMPLATE_COLUMNS)
 
         # Sorting cache: sorting is O(n log n) and only re-runs when the data
         # actually changed (version bump) or sort settings changed. This keeps
@@ -35,8 +35,8 @@ class Core:
         self._sorted: list[Bill] = []
 
         self.logger.info(
-            f"started: {len(self.bills)} bills, {len(self.debitors)} debitor templates, "
-            f"{len(self.creditors)} creditor templates, language={self.settings.language}"
+            f"started: {len(self.bills)} bills, {len(self.payee_templates)} payee templates, "
+            f"{len(self.payer_templates)} payer templates, language={self.settings.language}"
         )
 
     def sorted_bills(self) -> list[Bill]:
@@ -52,11 +52,11 @@ class Core:
         self.logger.info(f"data.csv saved ({len(self.bills)} bills)")
 
     def templates(self, kind: str) -> list[dict]:
-        return self.debitors if kind == "debitor" else self.creditors
+        return self.payee_templates if kind == "payee" else self.payer_templates
 
     def save_templates(self, kind: str) -> None:
-        name, fields = (("debitorList.csv", DEBITOR_FIELDS) if kind == "debitor"
-                        else ("creditorList.csv", CREDITOR_FIELDS))
+        name, fields = (("debitorList.csv", PAYEE_TEMPLATE_COLUMNS) if kind == "payee"
+                        else ("creditorList.csv", PAYER_TEMPLATE_COLUMNS))
         write_rows(self.userdata / name, fields, self.templates(kind))
         self.logger.info(f"{kind} templates saved ({len(self.templates(kind))} entries)")
 

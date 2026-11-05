@@ -27,7 +27,7 @@ class PayModal(ModalScreen):
             yield Label(tr("f_paid_date"))
             yield Input(value=format_date(today_iso(), fmt), placeholder=fmt, id="pay-date")
             yield Label(tr("f_paid_with"))
-            yield Input(value=self.bill.paidWith, placeholder="ZKB / TWINT / Post …",
+            yield Input(value=self.bill.paid_with, placeholder="ZKB / TWINT / Post …",
                         id="pay-with")
             yield Checkbox(tr("f_paid_checked"), value=self.bill.is_checked, id="pay-checked")
             with Horizontal(classes="dlg-buttons"):
@@ -48,9 +48,9 @@ class PayModal(ModalScreen):
             self.notify(tr("msg_invalid_date"), severity="error")
             return
         result = {
-            "paidDate": paid_iso,
-            "paidWith": self.query_one("#pay-with", Input).value.strip(),
-            "paidChecked": "True" if self.query_one("#pay-checked", Checkbox).value else "False",
+            "paid_date": paid_iso,
+            "paid_with": self.query_one("#pay-with", Input).value.strip(),
+            "paid_checked": "True" if self.query_one("#pay-checked", Checkbox).value else "False",
         }
         await self.on_confirm(result)
         self.dismiss(None)

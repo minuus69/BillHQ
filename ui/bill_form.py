@@ -7,7 +7,7 @@ from textual.widget import Widget
 from textual.widgets import Checkbox, Input, Label, Select
 
 from appdata.csvparser import (
-    COUNTRIES, CURRENCIES, DATA_FIELDS, FIELD_LABELS, REQUIRED_FIELDS, Bill, Settings,
+    COUNTRIES, CURRENCIES, BILL_FIELDS, FIELD_LABELS, REQUIRED_FIELDS, Bill, Settings,
     format_date, parse_amount, parse_date,
 )
 from appdata.languages import tr
@@ -39,35 +39,35 @@ class BillEditForm(Widget):
     def _build(self) -> None:
         b, fmt = self.bill, self.settings.date_format
         self.w_description = self._inp("description", b.description)
-        self.w_due = self._inp("dueDate", format_date(b.dueDate, fmt), placeholder=fmt)
-        self.w_paid_date = self._inp("paidDate", format_date(b.paidDate, fmt), placeholder=fmt)
-        self.w_paid_with = self._inp("paidWith", b.paidWith,
+        self.w_due = self._inp("due_date", format_date(b.due_date, fmt), placeholder=fmt)
+        self.w_paid_date = self._inp("paid_date", format_date(b.paid_date, fmt), placeholder=fmt)
+        self.w_paid_with = self._inp("paid_with", b.paid_with,
                                      placeholder="ZKB / TWINT / Post …")
         self.w_checked = Checkbox(tr("f_paid_checked"), value=b.is_checked,
-                                  id="form-paidChecked")
-        self.w_amount = self._inp("bAmount", b.bAmount, placeholder="0.00")
+                                  id="form-paid_checked")
+        self.w_amount = self._inp("amount", b.amount, placeholder="0.00")
 
-        self.w_currency = self._choice("bCurrency", CURRENCIES, b.bCurrency)
-        self.w_account = self._inp("bAccount", b.bAccount,
+        self.w_currency = self._choice("currency", CURRENCIES, b.currency)
+        self.w_account = self._inp("account", b.account,
                                    placeholder="CH12 1234 1234 1234 1234 4")
-        self.w_reference = self._inp("bReference", b.bReference,
+        self.w_reference = self._inp("reference", b.reference,
                                      placeholder="21 00000 00000 …")
         self.w_note = self._inp("note", b.note)
-        self.w_dname = self._inp("dName", b.dName)
-        self.w_dstreet = self._inp("dStreet", b.dStreet)
-        self.w_dnr = self._inp("dBuildingNr", b.dBuildingNr)
-        self.w_dpc = self._inp("dPostalCode", b.dPostalCode)
-        self.w_dcity = self._inp("dCity", b.dCity)
+        self.w_payee_name = self._inp("payee_name", b.payee_name)
+        self.w_payee_street = self._inp("payee_street", b.payee_street)
+        self.w_payee_building_nr = self._inp("payee_building_nr", b.payee_building_nr)
+        self.w_payee_postal_code = self._inp("payee_postal_code", b.payee_postal_code)
+        self.w_payee_city = self._inp("payee_city", b.payee_city)
 
-        self.w_dcountry = self._choice("dCountry", COUNTRIES, b.dCountry)
-        self.w_cname = self._inp("cName", b.cName)
-        self.w_cstreet = self._inp("cStreet", b.cStreet)
-        self.w_cnr = self._inp("cBuildingNr", b.cBuildingNr)
-        self.w_cpc = self._inp("cPostalCode", b.cPostalCode)
-        self.w_ccity = self._inp("cCity", b.cCity)
+        self.w_payee_country = self._choice("payee_country", COUNTRIES, b.payee_country)
+        self.w_payer_name = self._inp("payer_name", b.payer_name)
+        self.w_payer_street = self._inp("payer_street", b.payer_street)
+        self.w_payer_building_nr = self._inp("payer_building_nr", b.payer_building_nr)
+        self.w_payer_postal_code = self._inp("payer_postal_code", b.payer_postal_code)
+        self.w_payer_city = self._inp("payer_city", b.payer_city)
 
-        self.w_ccountry = self._choice("cCountry", COUNTRIES, b.cCountry)
-        self.w_pnote = self._inp("privateNote", b.privateNote)
+        self.w_payer_country = self._choice("payer_country", COUNTRIES, b.payer_country)
+        self.w_pnote = self._inp("private_note", b.private_note)
 
     def compose(self) -> ComposeResult:
         def cell(label_key: str, control: Widget) -> Vertical:
@@ -86,40 +86,40 @@ class BillEditForm(Widget):
                 yield cell("f_paid_date", self.w_paid_date)
                 yield cell("f_paid_with", self.w_paid_with)
                 yield Vertical(self.w_checked, classes="form-cell")
-            yield Label(f"── {tr('debtor_section')} ──", classes="form-section")
+            yield Label(f"── {tr('payee_section')} ──", classes="form-section")
             with Grid(classes="form-grid"):
-                yield cell("f_dname", self.w_dname)
-                yield cell("f_street", self.w_dstreet)
-                yield cell("f_building_nr", self.w_dnr)
-                yield cell("f_postal_code", self.w_dpc)
-                yield cell("f_city", self.w_dcity)
-                yield cell("f_country", self.w_dcountry)
-            yield Label(f"── {tr('creditor_section')} ──", classes="form-section")
+                yield cell("f_payee_name", self.w_payee_name)
+                yield cell("f_street", self.w_payee_street)
+                yield cell("f_building_nr", self.w_payee_building_nr)
+                yield cell("f_postal_code", self.w_payee_postal_code)
+                yield cell("f_city", self.w_payee_city)
+                yield cell("f_country", self.w_payee_country)
+            yield Label(f"── {tr('payer_section')} ──", classes="form-section")
             with Grid(classes="form-grid"):
-                yield cell("f_cname", self.w_cname)
-                yield cell("f_street", self.w_cstreet)
-                yield cell("f_building_nr", self.w_cnr)
-                yield cell("f_postal_code", self.w_cpc)
-                yield cell("f_city", self.w_ccity)
-                yield cell("f_country", self.w_ccountry)
+                yield cell("f_payer_name", self.w_payer_name)
+                yield cell("f_street", self.w_payer_street)
+                yield cell("f_building_nr", self.w_payer_building_nr)
+                yield cell("f_postal_code", self.w_payer_postal_code)
+                yield cell("f_city", self.w_payer_city)
+                yield cell("f_country", self.w_payer_country)
             yield Label(f"── {tr('f_private_note')} ──", classes="form-section")
             yield self.w_pnote
 
     # -- programmatic access -------------------------------------------------
     def set_value(self, field: str, value: str) -> None:
-        if field == "paidChecked":
+        if field == "paid_checked":
             self.w_checked.value = str(value).strip().lower() in ("true", "1", "yes")
-        elif field == "bCurrency":
+        elif field == "currency":
             if value in CURRENCIES:
                 self.w_currency.value = value
-        elif field == "dCountry":
+        elif field == "payee_country":
             if value in COUNTRIES:
-                self.w_dcountry.value = value
-        elif field == "cCountry":
+                self.w_payee_country.value = value
+        elif field == "payer_country":
             if value in COUNTRIES:
-                self.w_ccountry.value = value
+                self.w_payer_country.value = value
         elif field in self.inputs:
-            if field in ("dueDate", "paidDate") and value:
+            if field in ("due_date", "paid_date") and value:
                 value = format_date(value, self.settings.date_format)
             self.inputs[field].value = value
 
@@ -130,10 +130,10 @@ class BillEditForm(Widget):
     def collect(self) -> tuple[Bill | None, str | None]:
         """Returns (bill, None) on success or (None, error_message)."""
         vals = {f: w.value.strip() for f, w in self.inputs.items()}
-        vals["bCurrency"] = select_text(self.w_currency)
-        vals["dCountry"] = select_text(self.w_dcountry)
-        vals["cCountry"] = select_text(self.w_ccountry)
-        vals["paidChecked"] = "True" if self.w_checked.value else "False"
+        vals["currency"] = select_text(self.w_currency)
+        vals["payee_country"] = select_text(self.w_payee_country)
+        vals["payer_country"] = select_text(self.w_payer_country)
+        vals["paid_checked"] = "True" if self.w_checked.value else "False"
 
         errors: list[str] = []
         missing = [f for f in REQUIRED_FIELDS if not vals.get(f)]
@@ -141,14 +141,14 @@ class BillEditForm(Widget):
             names = ", ".join(tr(FIELD_LABELS[f]) for f in missing)
             errors.append(tr("msg_missing_required").format(fields=names))
 
-        raw = vals.get("bAmount", "")
+        raw = vals.get("amount", "")
         if raw:
             try:
-                vals["bAmount"] = f"{parse_amount(raw):.2f}"
+                vals["amount"] = f"{parse_amount(raw):.2f}"
             except ValueError:
                 errors.append(tr("msg_invalid_amount"))
 
-        for f in ("dueDate", "paidDate"):
+        for f in ("due_date", "paid_date"):
             txt = vals.get(f, "")
             if not txt:
                 vals[f] = ""
@@ -160,4 +160,4 @@ class BillEditForm(Widget):
 
         if errors:
             return None, " · ".join(errors)
-        return Bill(**{f: vals.get(f, "") for f in DATA_FIELDS}), None
+        return Bill(**{f: vals.get(f, "") for f in BILL_FIELDS}), None

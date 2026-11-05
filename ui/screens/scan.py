@@ -9,7 +9,7 @@ from textual.app import ComposeResult
 from textual.widgets import Static
 
 from appdata import qr
-from appdata.csvparser import DATA_FIELDS, Bill
+from appdata.csvparser import BILL_FIELDS, Bill
 from appdata.languages import tr
 from ui.screens.base import BillFormScreen, MenuItem, MenuScreen
 
@@ -48,7 +48,7 @@ class ScanBillScreen(MenuScreen):
                 self.app.call_from_thread(self._open_form, data)
 
     def _open_form(self, data: dict) -> None:
-        self.app.push_screen(ScanEditScreen(Bill(**{f: data.get(f, "") for f in DATA_FIELDS})))
+        self.app.push_screen(ScanEditScreen(Bill(**{f: data.get(f, "") for f in BILL_FIELDS})))
 
     def _fail(self, msg: str) -> None:
         self.query_one("#scan-status", Static).update(Text(msg, style="red"))

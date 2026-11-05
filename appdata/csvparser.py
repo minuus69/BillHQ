@@ -24,34 +24,48 @@ from appdata.languages import LANG_CODES
 # --------------------------------------------------------------------------- #
 # Field definitions
 # --------------------------------------------------------------------------- #
-DATA_FIELDS = [
-    "description", "dueDate", "paidDate", "paidWith", "paidChecked",
-    "bAmount", "bCurrency", "bAccount", "bReference", "note",
-    "dName", "dStreet", "dBuildingNr", "dPostalCode", "dCity", "dCountry",
-    "cName", "cStreet", "cBuildingNr", "cPostalCode", "cCity", "cCountry",
-    "privateNote",
-]
+# Field names in the code -> column names in the CSV files. The columns are the
+# on-disk format, so existing files keep working. In the columns, d* means the
+# payee (who gets the money, "Payable to" on a QR bill) and c* means the payer.
+_PAYEE_COLUMNS = {
+    "payee_name": "dName", "payee_street": "dStreet", "payee_building_nr": "dBuildingNr",
+    "payee_postal_code": "dPostalCode", "payee_city": "dCity", "payee_country": "dCountry",
+}
+_PAYER_COLUMNS = {
+    "payer_name": "cName", "payer_street": "cStreet", "payer_building_nr": "cBuildingNr",
+    "payer_postal_code": "cPostalCode", "payer_city": "cCity", "payer_country": "cCountry",
+}
+BILL_COLUMNS = {
+    "description": "description", "due_date": "dueDate", "paid_date": "paidDate",
+    "paid_with": "paidWith", "paid_checked": "paidChecked", "amount": "bAmount",
+    "currency": "bCurrency", "account": "bAccount", "reference": "bReference", "note": "note",
+    **_PAYEE_COLUMNS, **_PAYER_COLUMNS, "private_note": "privateNote",
+}
+BILL_FIELDS = list(BILL_COLUMNS)
+
+# Template rows use the same names as Bill, so a template can be applied field by field.
+PAYEE_TEMPLATE_COLUMNS = {
+    "description": "description", "amount": "amount", "currency": "currency",
+    "account": "account", **_PAYEE_COLUMNS,
+}
+PAYER_TEMPLATE_COLUMNS = dict(_PAYER_COLUMNS)
 
 # fields marked with * in the spec: must be non-empty to be saved
 REQUIRED_FIELDS = [
-    "description", "bAmount", "bCurrency", "bAccount",
-    "dName", "dPostalCode", "dCity", "dCountry",
+    "description", "amount", "currency", "account",
+    "payee_name", "payee_postal_code", "payee_city", "payee_country",
 ]
-
-DEBITOR_FIELDS = ["description", "amount", "currency", "account", "dName", "dStreet",
-                  "dBuildingNr", "dPostalCode", "dCity", "dCountry"]
-CREDITOR_FIELDS = ["cName", "cStreet", "cBuildingNr", "cPostalCode", "cCity", "cCountry"]
 
 # translation keys for field labels (used in validation errors)
 FIELD_LABELS = {
-    "description": "f_description", "dueDate": "f_due_date", "paidDate": "f_paid_date",
-    "paidWith": "f_paid_with", "paidChecked": "f_paid_checked", "bAmount": "f_amount",
-    "bCurrency": "f_currency", "bAccount": "f_account", "bReference": "f_reference",
-    "note": "f_note", "dName": "f_dname", "dStreet": "f_street",
-    "dBuildingNr": "f_building_nr", "dPostalCode": "f_postal_code", "dCity": "f_city",
-    "dCountry": "f_country", "cName": "f_cname", "cStreet": "f_street",
-    "cBuildingNr": "f_building_nr", "cPostalCode": "f_postal_code", "cCity": "f_city",
-    "cCountry": "f_country", "privateNote": "f_private_note",
+    "description": "f_description", "due_date": "f_due_date", "paid_date": "f_paid_date",
+    "paid_with": "f_paid_with", "paid_checked": "f_paid_checked", "amount": "f_amount",
+    "currency": "f_currency", "account": "f_account", "reference": "f_reference",
+    "note": "f_note", "payee_name": "f_payee_name", "payee_street": "f_street",
+    "payee_building_nr": "f_building_nr", "payee_postal_code": "f_postal_code", "payee_city": "f_city",
+    "payee_country": "f_country", "payer_name": "f_payer_name", "payer_street": "f_street",
+    "payer_building_nr": "f_building_nr", "payer_postal_code": "f_postal_code", "payer_city": "f_city",
+    "payer_country": "f_country", "private_note": "f_private_note",
 }
 
 CURRENCIES = ["CHF", "EUR", "USD", "RSD", "JPY", "CNY"]
@@ -68,43 +82,44 @@ DATE_FORMATS = ["dd.mm.yyyy", "dd.mm.yy", "dd/mm/yyyy", "mm/dd/yyyy", "mm/dd/yy"
 @dataclass
 class Bill:
     description: str = ""
-    dueDate: str = ""          # ISO yyyy-mm-dd in the CSV
-    paidDate: str = ""         # empty = unpaid
-    paidWith: str = ""
-    paidChecked: str = ""      # "True" / "False"
-    bAmount: str = ""
-    bCurrency: str = ""
-    bAccount: str = ""
-    bReference: str = ""
+    due_date: str = ""          # ISO yyyy-mm-dd in the CSV
+    paid_date: str = ""         # empty = unpaid
+    paid_with: str = ""
+    paid_checked: str = ""      # "True" / "False"
+    amount: str = ""
+    currency: str = ""
+    account: str = ""
+    reference: str = ""
     note: str = ""
-    dName: str = ""
-    dStreet: str = ""
-    dBuildingNr: str = ""
-    dPostalCode: str = ""
-    dCity: str = ""
-    dCountry: str = ""
-    cName: str = ""
-    cStreet: str = ""
-    cBuildingNr: str = ""
-    cPostalCode: str = ""
-    cCity: str = ""
-    cCountry: str = ""
-    privateNote: str = ""
+    payee_name: str = ""
+    payee_street: str = ""
+    payee_building_nr: str = ""
+    payee_postal_code: str = ""
+    payee_city: str = ""
+    payee_country: str = ""
+    payer_name: str = ""
+    payer_street: str = ""
+    payer_building_nr: str = ""
+    payer_postal_code: str = ""
+    payer_city: str = ""
+    payer_country: str = ""
+    private_note: str = ""
 
     @property
     def is_paid(self) -> bool:
-        return bool(self.paidDate.strip())
+        return bool(self.paid_date.strip())
 
     @property
     def is_checked(self) -> bool:
-        return self.paidChecked.strip().lower() in ("true", "1", "yes", "x")
+        return self.paid_checked.strip().lower() in ("true", "1", "yes", "x")
 
     def to_row(self) -> dict[str, str]:
-        return {f: str(getattr(self, f)) for f in DATA_FIELDS}
+        return {column: str(getattr(self, field)) for field, column in BILL_COLUMNS.items()}
 
     @classmethod
     def from_row(cls, row: dict) -> "Bill":
-        return cls(**{f: (row.get(f) or "").strip() for f in DATA_FIELDS})
+        return cls(**{field: (row.get(column) or "").strip()
+                      for field, column in BILL_COLUMNS.items()})
 
 
 def bill_state(bill: Bill, today: date | None = None) -> str:
@@ -112,7 +127,7 @@ def bill_state(bill: Bill, today: date | None = None) -> str:
     if bill.is_paid:
         return "paid"
     try:
-        due = parse_date(bill.dueDate)
+        due = parse_date(bill.due_date)
     except ValueError:
         return "open"
     return "overdue" if due < (today or date.today()) else "open"
@@ -190,7 +205,7 @@ def sort_bills(bills: list[Bill], sort_by: str = "dueDate", order: str = "asc") 
     if sort_by == "description":
         ordered = sorted(bills, key=lambda b: b.description.casefold(), reverse=rev)
     else:
-        field = sort_by if sort_by in ("dueDate", "paidDate") else "dueDate"
+        field = "paid_date" if sort_by == "paidDate" else "due_date"
         dated = [b for b in bills if getattr(b, field).strip()]
         undated = [b for b in bills if not getattr(b, field).strip()]
         ordered = sorted(dated, key=lambda b: getattr(b, field), reverse=rev) + undated
@@ -238,7 +253,7 @@ def load_bills(path: Path) -> list[Bill]:
 
 def save_bills(path: Path, bills: list[Bill]) -> None:
     with _atomic_open(path, backup=True) as fh:
-        writer = csv.DictWriter(fh, fieldnames=DATA_FIELDS, quoting=csv.QUOTE_MINIMAL)
+        writer = csv.DictWriter(fh, fieldnames=list(BILL_COLUMNS.values()), quoting=csv.QUOTE_MINIMAL)
         writer.writeheader()
         for b in bills:
             writer.writerow(b.to_row())
@@ -250,19 +265,20 @@ def _clean_cell(value: str | None) -> str:
     return "" if value in ("Select.NULL", "Select.BLANK") else value
 
 
-def read_rows(path: Path, fields: list[str]) -> list[dict]:
+def read_rows(path: Path, columns: dict[str, str]) -> list[dict]:
     if not Path(path).exists():
         return []
     with open(path, newline="", encoding="utf-8") as fh:
-        return [{k: _clean_cell(row.get(k)) for k in fields} for row in csv.DictReader(fh)]
+        return [{field: _clean_cell(row.get(column)) for field, column in columns.items()}
+                for row in csv.DictReader(fh)]
 
 
-def write_rows(path: Path, fields: list[str], rows: list[dict]) -> None:
+def write_rows(path: Path, columns: dict[str, str], rows: list[dict]) -> None:
     with _atomic_open(path, backup=True) as fh:
-        writer = csv.DictWriter(fh, fieldnames=fields, quoting=csv.QUOTE_MINIMAL)
+        writer = csv.DictWriter(fh, fieldnames=list(columns.values()), quoting=csv.QUOTE_MINIMAL)
         writer.writeheader()
         for r in rows:
-            writer.writerow({k: r.get(k, "") for k in fields})
+            writer.writerow({column: r.get(field, "") for field, column in columns.items()})
 
 
 # --------------------------------------------------------------------------- #
@@ -274,7 +290,7 @@ class Settings:
     date_format: str = "dd.mm.yyyy"
     default_currency: str = "CHF"
     default_country: str = "CH"
-    sort_by: str = "dueDate"          # dueDate | paidDate | description
+    sort_by: str = "dueDate"          # dueDate | paidDate | description (as stored in the file)
     sort_order: str = "asc"           # asc | desc
     loglevel: str = "info"            # debug | info | error
     logsize: int = 2048               # max lines kept in appdata/log
@@ -329,39 +345,39 @@ def _sample_bills() -> list[Bill]:
     return [
         Bill(
             description="Steueramt: Finanzamt Steuerbestätigung",
-            dueDate=(today + timedelta(days=8)).isoformat(),
-            bAmount="1250.00", bCurrency="CHF",
-            bAccount="CH93 0076 2011 6238 5295 7",
-            bReference="21 00000 00003 13947 14300 09017",
+            due_date=(today + timedelta(days=8)).isoformat(),
+            amount="1250.00", currency="CHF",
+            account="CH93 0076 2011 6238 5295 7",
+            reference="21 00000 00003 13947 14300 09017",
             note="Steuerrechnung",
-            dName="Finanzamt Zürich", dStreet="Sihlstrasse", dBuildingNr="23",
-            dPostalCode="8001", dCity="Zürich", dCountry="CH",
-            cName="Max Muster", cStreet="Musterweg", cBuildingNr="12",
-            cPostalCode="8000", cCity="Zürich", cCountry="CH",
+            payee_name="Finanzamt Zürich", payee_street="Sihlstrasse", payee_building_nr="23",
+            payee_postal_code="8001", payee_city="Zürich", payee_country="CH",
+            payer_name="Max Muster", payer_street="Musterweg", payer_building_nr="12",
+            payer_postal_code="8000", payer_city="Zürich", payer_country="CH",
         ),
         Bill(
             description="Online Shop: Bestellung #4711",
-            dueDate=(today + timedelta(days=40)).isoformat(),
-            bAmount="89.99", bCurrency="EUR",
-            bAccount="CH12 1234 1234 1234 1234 4",
-            bReference="RF18 5390 0754 7018 5",
-            dName="Beispiel Handel AG", dStreet="Bahnhofstrasse", dBuildingNr="1",
-            dPostalCode="3000", dCity="Bern", dCountry="CH",
-            cName="Max Muster", cStreet="Musterweg", cBuildingNr="12",
-            cPostalCode="8000", cCity="Zürich", cCountry="CH",
+            due_date=(today + timedelta(days=40)).isoformat(),
+            amount="89.99", currency="EUR",
+            account="CH12 1234 1234 1234 1234 4",
+            reference="RF18 5390 0754 7018 5",
+            payee_name="Beispiel Handel AG", payee_street="Bahnhofstrasse", payee_building_nr="1",
+            payee_postal_code="3000", payee_city="Bern", payee_country="CH",
+            payer_name="Max Muster", payer_street="Musterweg", payer_building_nr="12",
+            payer_postal_code="8000", payer_city="Zürich", payer_country="CH",
         ),
         Bill(
             description="Swisscom: Abo",
-            dueDate=(today - timedelta(days=20)).isoformat(),
-            paidDate=(today - timedelta(days=19)).isoformat(),
-            paidWith="TWINT", paidChecked="True",
-            bAmount="79.90", bCurrency="CHF",
-            bAccount="CH93 0076 2011 6238 5295 7",
-            bReference="21 00000 00003 13947 14300 09017",
-            dName="Swisscom AG", dStreet="Alte Tiefenaustrasse", dBuildingNr="6",
-            dPostalCode="3048", dCity="Worblaufen", dCountry="CH",
-            cName="Max Muster", cStreet="Musterweg", cBuildingNr="12",
-            cPostalCode="8000", cCity="Zürich", cCountry="CH",
+            due_date=(today - timedelta(days=20)).isoformat(),
+            paid_date=(today - timedelta(days=19)).isoformat(),
+            paid_with="TWINT", paid_checked="True",
+            amount="79.90", currency="CHF",
+            account="CH93 0076 2011 6238 5295 7",
+            reference="21 00000 00003 13947 14300 09017",
+            payee_name="Swisscom AG", payee_street="Alte Tiefenaustrasse", payee_building_nr="6",
+            payee_postal_code="3048", payee_city="Worblaufen", payee_country="CH",
+            payer_name="Max Muster", payer_street="Musterweg", payer_building_nr="12",
+            payer_postal_code="8000", payer_city="Zürich", payer_country="CH",
         ),
     ]
 
@@ -380,20 +396,20 @@ def bootstrap_files(userdata: Path, appdata: Path) -> None:
 
     deb_path = userdata / "debitorList.csv"
     if not deb_path.exists():
-        write_rows(deb_path, DEBITOR_FIELDS, [
+        write_rows(deb_path, PAYEE_TEMPLATE_COLUMNS, [
             {"description": "Steuerrechnung", "amount": "1250.00", "currency": "CHF",
-             "dName": "Finanzamt Zürich", "dStreet": "Sihlstrasse", "dBuildingNr": "23",
-             "dPostalCode": "8001", "dCity": "Zürich", "dCountry": "CH"},
+             "payee_name": "Finanzamt Zürich", "payee_street": "Sihlstrasse", "payee_building_nr": "23",
+             "payee_postal_code": "8001", "payee_city": "Zürich", "payee_country": "CH"},
             {"description": "Stromrechnung", "amount": "85.40", "currency": "CHF",
-             "dName": "EWZ", "dStreet": "Technoparkstrasse", "dBuildingNr": "1",
-             "dPostalCode": "8005", "dCity": "Zürich", "dCountry": "CH"},
+             "payee_name": "EWZ", "payee_street": "Technoparkstrasse", "payee_building_nr": "1",
+             "payee_postal_code": "8005", "payee_city": "Zürich", "payee_country": "CH"},
         ])
 
     cred_path = userdata / "creditorList.csv"
     if not cred_path.exists():
-        write_rows(cred_path, CREDITOR_FIELDS, [
-            {"cName": "Max Muster", "cStreet": "Musterweg", "cBuildingNr": "12",
-             "cPostalCode": "8000", "cCity": "Zürich", "cCountry": "CH"},
+        write_rows(cred_path, PAYER_TEMPLATE_COLUMNS, [
+            {"payer_name": "Max Muster", "payer_street": "Musterweg", "payer_building_nr": "12",
+             "payer_postal_code": "8000", "payer_city": "Zürich", "payer_country": "CH"},
         ])
 
     data_path = userdata / "data.csv"

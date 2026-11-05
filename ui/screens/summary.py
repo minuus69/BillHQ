@@ -33,7 +33,7 @@ class SummaryScreen(BackScreen):
             if open_bills:
                 sums: dict[str, Decimal] = defaultdict(Decimal)
                 for b in open_bills:
-                    sums[b.bCurrency or "?"] += amount_decimal(b.bAmount)
+                    sums[b.currency or "?"] += amount_decimal(b.amount)
                 t = Table(box=None, pad_edge=False, padding=(0, 2))
                 t.add_column(width=10)
                 t.add_column(justify="right", width=18)
@@ -54,12 +54,12 @@ class SummaryScreen(BackScreen):
                                   today + timedelta(days=30), fmt, include_overdue=False)
 
             paid = [b for b in core.bills
-                    if b.is_paid and (b.paidDate or "")[:4] == str(today.year)]
+                    if b.is_paid and (b.paid_date or "")[:4] == str(today.year)]
             yield Static(tr("summary_paid_year"), classes="summary-head")
             if paid:
                 sums2: dict[str, Decimal] = defaultdict(Decimal)
                 for b in paid:
-                    sums2[b.bCurrency or "?"] += amount_decimal(b.bAmount)
+                    sums2[b.currency or "?"] += amount_decimal(b.amount)
                 t2 = Table(box=None, pad_edge=False, padding=(0, 2))
                 t2.add_column(width=10)
                 t2.add_column(justify="right", width=18)
@@ -77,7 +77,7 @@ class SummaryScreen(BackScreen):
         today = date.today()
         picked: list[tuple[date, Bill]] = []
         for b in open_bills:
-            iso = (b.dueDate or "").strip()
+            iso = (b.due_date or "").strip()
             if not iso:
                 continue
             try:
@@ -95,6 +95,6 @@ class SummaryScreen(BackScreen):
         t.add_column(justify="right", width=18)
         for d, b in picked:
             style = "#ff4d4f bold" if d < today else None
-            t.add_row(Text(format_date(b.dueDate, fmt), style=style), b.description or "–",
-                          f"{format_amount(amount_decimal(b.bAmount))} {b.bCurrency}")
+            t.add_row(Text(format_date(b.due_date, fmt), style=style), b.description or "–",
+                          f"{format_amount(amount_decimal(b.amount))} {b.currency}")
         return Static(t, classes="summary-block")

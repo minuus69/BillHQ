@@ -9,7 +9,7 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widgets import Button, Checkbox, Header, Input, Select, Static, TextArea
 
 from appdata import qr
-from appdata.csvparser import DATA_FIELDS, Bill, Settings, amount_decimal, bill_state, format_date
+from appdata.csvparser import BILL_FIELDS, Bill, Settings, amount_decimal, bill_state, format_date
 from appdata.languages import tr
 from ui.dialogs import ConfirmDeleteModal, PayModal
 from ui.helpers import detail_text, format_amount
@@ -31,9 +31,9 @@ class RowHead(Static):
         else:
             status = Text(tr("status_open"), style="bold #f5a623")
 
-        due = format_date(bill.dueDate, settings.date_format) or "–"
+        due = format_date(bill.due_date, settings.date_format) or "–"
         due_style = "bold #ff4d4f" if state == "overdue" else None
-        amount = f"{format_amount(amount_decimal(bill.bAmount))} {bill.bCurrency}"
+        amount = f"{format_amount(amount_decimal(bill.amount))} {bill.currency}"
 
         t = Table(box=None, pad_edge=False, padding=(0, 0), expand=True)
         t.add_column(width=11, no_wrap=True)
@@ -155,8 +155,8 @@ class BillsScreen(BackScreen):
         results = []
         for bill in bills:
             searchable = (
-                f"{bill.description} {bill.note} {bill.dName} {bill.cName} "
-                f"{bill.privateNote} {bill.bReference} {bill.bAccount}"
+                f"{bill.description} {bill.note} {bill.payee_name} {bill.payer_name} "
+                f"{bill.private_note} {bill.reference} {bill.account}"
             ).lower()
             if self._search_query in searchable:
                 results.append(bill)
@@ -267,12 +267,12 @@ class BillsScreen(BackScreen):
 
     def _pay(self, row: BillRow) -> None:
         async def confirm(result: dict) -> None:
-            row.bill.paidDate = result["paidDate"]
-            row.bill.paidWith = result["paidWith"]
-            row.bill.paidChecked = result["paidChecked"]
+            row.bill.paid_date = result["paid_date"]
+            row.bill.paid_with = result["paid_with"]
+            row.bill.paid_checked = result["paid_checked"]
             self.core.persist()
             self.core.logger.info(
-                f"bill paid: {row.bill.description!r} on {result['paidDate']}")
+                f"bill paid: {row.bill.description!r} on {result['paid_date']}")
             self.notify(tr("msg_paid"))
             await self.rebuild()
         self.app.push_screen(PayModal(row.bill, self.core.settings, confirm))
@@ -305,5 +305,5 @@ class EditBillScreen(BillFormScreen):
         return self.bill
 
     def apply(self, bill: Bill) -> None:
-        for field in DATA_FIELDS:
+        for field in BILL_FIELDS:
             setattr(self.bill, field, getattr(bill, field))

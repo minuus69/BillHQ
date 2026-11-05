@@ -5,18 +5,10 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Label, Select
 
-from appdata.csvparser import CREDITOR_FIELDS, Bill
+from appdata.csvparser import Bill
 from appdata.languages import tr
 from ui.screens.base import BillFormScreen
 from ui.screens.bills import BillsScreen
-
-DEBITOR_TEMPLATE_TO_BILL = {
-    "description": "description", "bAmount": "amount", "bCurrency": "currency",
-    "bAccount": "account", "dName": "dName", "dStreet": "dStreet",
-    "dBuildingNr": "dBuildingNr", "dPostalCode": "dPostalCode", "dCity": "dCity",
-    "dCountry": "dCountry",
-}
-CREDITOR_TEMPLATE_TO_BILL = {f: f for f in CREDITOR_FIELDS}
 
 
 class NewBillScreen(BillFormScreen):
@@ -24,45 +16,44 @@ class NewBillScreen(BillFormScreen):
 
     def initial_bill(self) -> Bill:
         settings = self.core.settings
-        return Bill(bCurrency=settings.default_currency, dCountry=settings.default_country,
-                    cCountry=settings.default_country)
+        return Bill(currency=settings.default_currency, payee_country=settings.default_country,
+                    payer_country=settings.default_country)
 
     def compose_above_form(self) -> ComposeResult:
         with Horizontal(classes="tpl-row"):
             with Vertical(classes="tpl-cell"):
-                yield Label(tr("tpl_debtor"))
-                yield Select(self._options(self.core.debitors, debtor=True), allow_blank=True,
-                             prompt=tr("tpl_none"), id="tpl-debtor")
+                yield Label(tr("tpl_payee"))
+                yield Select(self._options(self.core.payee_templates, payee=True), allow_blank=True,
+                             prompt=tr("tpl_none"), id="tpl-payee")
             with Vertical(classes="tpl-cell"):
-                yield Label(tr("tpl_creditor"))
-                yield Select(self._options(self.core.creditors, debtor=False), allow_blank=True,
-                             prompt=tr("tpl_none"), id="tpl-creditor")
+                yield Label(tr("tpl_payer"))
+                yield Select(self._options(self.core.payer_templates, payee=False), allow_blank=True,
+                             prompt=tr("tpl_none"), id="tpl-payer")
 
     @staticmethod
-    def _options(rows: list[dict], debtor: bool) -> list[tuple[str, int]]:
+    def _options(rows: list[dict], payee: bool) -> list[tuple[str, int]]:
         opts = []
         for i, r in enumerate(rows):
-            if debtor:
-                label = " · ".join(p for p in (r.get("description", ""), r.get("dName", ""))
+            if payee:
+                label = " · ".join(p for p in (r.get("description", ""), r.get("payee_name", ""))
                                    if p.strip())
             else:
-                label = (r.get("cName") or "").strip()
+                label = (r.get("payer_name") or "").strip()
             opts.append((label or f"#{i + 1}", i))
         return opts
 
     def on_select_changed(self, event: Select.Changed) -> None:
         if not isinstance(event.value, int):      # dropdown cleared
             return
-        if event.select.id == "tpl-debtor":
-            template, mapping = self.core.debitors[event.value], DEBITOR_TEMPLATE_TO_BILL
-        elif event.select.id == "tpl-creditor":
-            template, mapping = self.core.creditors[event.value], CREDITOR_TEMPLATE_TO_BILL
+        if event.select.id == "tpl-payee":
+            template = self.core.payee_templates[event.value]
+        elif event.select.id == "tpl-payer":
+            template = self.core.payer_templates[event.value]
         else:
             return
-        for target, source in mapping.items():
-            value = (template.get(source) or "").strip()
-            if value:
-                self.form.set_value(target, value)
+        for field, value in template.items():
+            if value.strip():
+                self.form.set_value(field, value.strip())
         self.core.logger.info(f"template applied ({event.select.id})")
 
     def apply(self, bill: Bill) -> None:
