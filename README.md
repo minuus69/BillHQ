@@ -1,7 +1,4 @@
 # BillHQ
-Bill Organizer for Swiss Bills. Either you're broke, autistic or just need a tool to organize bills and plan your payments.
-
-# BillHQ
 
 A terminal-based bill management app with Swiss QR-bill support. Built with [Textual](https://github.com/Textualize/textual).
 
@@ -56,7 +53,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-## Where your data lives
+## Data Location
 | What | Where | Notes |
 | ---- | ----- | ----- |
 | Bills and templates | `~/Documents/BillHQ/` | Change it under Settings, "Data folder". It can be anywhere. |
@@ -106,10 +103,16 @@ You can choose one of the following languages:
 - Russian
 - Japanese
 - Chinese
-- Fortnite
+- **Fortnite**
 
 **To add a Language:** add a column to `languages.csv`, and then the code to `LANG_CODES` and `LANG_NAMES` in `appdata/languages.py`. Empty cells fall back to English or just the key name.
 
 ## Functionality
-man, find it out yourself, it doesn't have that many funcitons other than a search bar, sumary and qr generator as well as a qr code reader (swiss bill qr code, not some generic shit).
+- **All bills:** lists your bills with unpaid ones on top. Use the search bar to find a bill, then open it to generate its QR bill, mark it as paid, edit it or delete it.
+- **New bill:** fill in the form by hand, or use a saved recipient and payer to skip the typing.
+- **Scan bill:** reads a Swiss QR bill from your webcam, an image or a PDF, then fills in the form for you to check and save. It only reads Swiss QR bills, not other QR codes.
+- **QR generator:** creates a Swiss QR bill as an image and opens it in your image viewer. This only works for bills in CHF or EUR.
+- **Summary:** shows your totals and upcoming bills.
+- **Manage:** add or delete saved recipients and payers.
+- **Settings:** language, date format, default currency and country, sorting, logging and where your data is stored.
 
