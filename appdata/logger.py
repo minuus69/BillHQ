@@ -1,4 +1,4 @@
-"""File logger writing '[YYYY-mm-dd HH:MM:SS] [LEVEL] message' lines to appdata/log.
+"""File logger writing '[YYYY-mm-dd HH:MM:SS] [LEVEL] message' lines to a log file.
 
 Level and maximum line count come from settings and can be changed at runtime
 (settings screen). The file is trimmed to the configured line count.

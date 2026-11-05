@@ -65,19 +65,22 @@ class PayModal(ModalScreen):
         await self._ok()
 
 
-class ConfirmDeleteModal(ModalScreen):
+class ConfirmModal(ModalScreen):
+    """Asks a yes/no question and dismisses with True or False."""
     BINDINGS = [Binding("escape", "cancel", "Cancel")]
 
-    def __init__(self, message: str | None = None):
+    def __init__(self, title: str, message: str, yes_variant: str = "success"):
         super().__init__()
-        self.message = message or tr("confirm_delete_msg")
+        self.title_text = title
+        self.message = message
+        self.yes_variant = yes_variant
 
     def compose(self) -> ComposeResult:
         with Vertical(id="confirm-dialog"):
-            yield Static(tr("confirm_delete_title"), classes="dlg-title")
-            yield Static(self.message, classes="dlg-msg")
+            yield Static(self.title_text, classes="dlg-title")
+            yield Static(self.message, classes="dlg-msg", markup=False)
             with Horizontal(classes="dlg-buttons"):
-                yield Button(tr("btn_yes"), variant="error", id="confirm-yes")
+                yield Button(tr("btn_yes"), variant=self.yes_variant, id="confirm-yes")
                 yield Button(tr("btn_no"), variant="default", id="confirm-no")
 
     def action_cancel(self) -> None:
@@ -85,3 +88,9 @@ class ConfirmDeleteModal(ModalScreen):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self.dismiss(event.button.id == "confirm-yes")
+
+
+class ConfirmDeleteModal(ConfirmModal):
+    def __init__(self, message: str | None = None):
+        super().__init__(tr("confirm_delete_title"), message or tr("confirm_delete_msg"),
+                         yes_variant="error")

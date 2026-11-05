@@ -5,7 +5,7 @@ import pytest
 from textual.widgets import Button, Input, Select
 
 from ui import app as bill_app
-from ui.dialogs import ConfirmDeleteModal, PayModal
+from ui.dialogs import ConfirmDeleteModal, ConfirmModal, PayModal
 from ui.screens.bills import BillRow, BillsScreen, EditBillScreen, RowButton
 from ui.screens.main_menu import MainMenuScreen
 from ui.screens.splash import SplashScreen
@@ -18,17 +18,18 @@ from ui.screens.templates import (
     AddPayerTemplateScreen, AddRecipientTemplateScreen, ManageEntryItem, ManageListScreen, ManageScreen,
 )
 from appdata.csvparser import (
-    PAYER_TEMPLATE_COLUMNS, RECIPIENT_TEMPLATE_COLUMNS, Bill, load_bills, load_settings, read_rows, save_bills,
-    write_rows,
+    PAYER_TEMPLATE_COLUMNS, RECIPIENT_TEMPLATE_COLUMNS, Bill, create_missing_files, load_bills, load_settings, read_rows,
+    save_bills, write_rows,
 )
-from appdata.languages import set_language
+from appdata import paths
 
 
 @pytest.fixture
-def data_dir(tmp_path, monkeypatch):
-    monkeypatch.setattr(bill_app, "BASE_DIR", tmp_path)
-    yield tmp_path
-    set_language("en")
+def data_dir(isolated_home):
+    """A default data folder that already has its files."""
+    folder = isolated_home / "Documents" / "BillHQ"
+    create_missing_files(folder, bill_app.TEMPLATES_DIR)
+    return folder
 
 
 def run(test):
@@ -115,12 +116,12 @@ def test_clearing_a_template_selection_is_safe(data_dir):
         await pilot.pause(0.2)
         form = app.screen.form
         assert form.w_description.value == "Steuerrechnung"
-        assert form.w_recipient_name.value == "Finanzamt Zürich"
+        assert form.w_recipient_name.value == "Steueramt Zürich"
         assert form.w_amount.value == "1250.00"
         assert form.w_currency.value == "CHF"
         app.screen.query_one("#tpl-payer", Select).value = 0
         await pilot.pause(0.2)
-        assert form.w_payer_name.value == "Max Muster"
+        assert form.w_payer_name.value == "Max Mustermann"
         template.clear()
         await pilot.pause(0.2)
     run(test)
@@ -134,7 +135,7 @@ def test_untouched_dropdown_saves_as_empty(data_dir):
         app.screen.query_one("#btn-template-save").press()
         await pilot.pause(0.3)
     run(test)
-    rows = read_rows(data_dir / "userdata" / "payerList.csv", PAYER_TEMPLATE_COLUMNS)
+    rows = read_rows(data_dir / "payerList.csv", PAYER_TEMPLATE_COLUMNS)
     assert rows[-1]["payer_name"] == "Test"
     assert rows[-1]["payer_country"] == ""
 
@@ -185,12 +186,11 @@ def test_qr_error_with_brackets_is_shown_not_crashed(data_dir):
 
 
 def test_unknown_settings_fall_back_and_screen_opens(data_dir):
-    userdata = data_dir / "userdata"
-    userdata.mkdir()
-    (userdata / "settings.toml").write_text(
+    config = paths.private_dir(paths.config_dir())
+    (config / "settings.toml").write_text(
         '[settings]\nlanguage = "xx"\ndefault_currency = "GBP"\ndefault_country = "ZZ"\n',
         encoding="utf-8")
-    settings = load_settings(userdata / "settings.toml")
+    settings = load_settings(config / "settings.toml")
     assert (settings.language, settings.default_currency, settings.default_country) == \
         ("en", "CHF", "CH")
 
@@ -201,8 +201,7 @@ def test_unknown_settings_fall_back_and_screen_opens(data_dir):
 
 
 def test_paying_a_bill_is_saved(data_dir):
-    userdata = data_dir / "userdata"
-    save_bills(userdata / "data.csv", [Bill(description="a", due_date="2030-01-01",
+    save_bills(data_dir / "data.csv", [Bill(description="a", due_date="2030-01-01",
                                             amount="1.00", currency="CHF")])
 
     async def test(app, pilot):
@@ -216,7 +215,7 @@ def test_paying_a_bill_is_saved(data_dir):
         assert len(list(screen.query(BillRow))) == 1
         assert app.core.bills[0].is_paid
     run(test)
-    assert "a," in (userdata / "data.csv").read_text(encoding="utf-8")
+    assert "a," in (data_dir / "data.csv").read_text(encoding="utf-8")
 
 
 def test_language_switch_returns_to_translated_menu(data_dir):
@@ -254,7 +253,7 @@ def test_main_menu_opens_screens_with_keyboard(data_dir, position, screen):
 
 
 def seed(data_dir, *descriptions):
-    save_bills(data_dir / "userdata" / "data.csv", [
+    save_bills(data_dir / "data.csv", [
         Bill(description=d, due_date="2030-01-01", amount="1.00", currency="CHF", account="a",
              recipient_name="n", recipient_postal_code="1", recipient_city="c", recipient_country="CH")
         for d in descriptions])
@@ -284,7 +283,7 @@ def test_row_pay_button_opens_dialog_and_saves(data_dir):
         await pilot.pause(0.5)
         assert app.screen is screen
     run(test)
-    assert load_bills(data_dir / "userdata" / "data.csv")[0].is_paid
+    assert load_bills(data_dir / "data.csv")[0].is_paid
 
 
 def test_row_pay_cancel_changes_nothing(data_dir):
@@ -298,7 +297,7 @@ def test_row_pay_cancel_changes_nothing(data_dir):
         await pilot.pause(0.3)
         assert app.screen is screen
     run(test)
-    assert not load_bills(data_dir / "userdata" / "data.csv")[0].is_paid
+    assert not load_bills(data_dir / "data.csv")[0].is_paid
 
 
 def test_row_delete_button_needs_confirmation(data_dir):
@@ -320,7 +319,7 @@ def test_row_delete_button_needs_confirmation(data_dir):
         await pilot.pause(0.5)
         assert len(screen.rows) == 1
     run(test)
-    assert len(load_bills(data_dir / "userdata" / "data.csv")) == 1
+    assert len(load_bills(data_dir / "data.csv")) == 1
 
 
 def test_row_edit_button_saves_the_right_bill(data_dir):
@@ -338,7 +337,7 @@ def test_row_edit_button_saves_the_right_bill(data_dir):
         assert app.screen is screen
         assert any(r.bill.description == target + " edited" for r in screen.rows)
     run(test)
-    names = [b.description for b in load_bills(data_dir / "userdata" / "data.csv")]
+    names = [b.description for b in load_bills(data_dir / "data.csv")]
     assert sorted(names) == ["a edited", "b"]
 
 
@@ -351,7 +350,7 @@ def test_row_qr_button_reports_a_failure(data_dir):
         await pilot.pause(0.3)
         assert app.screen is screen
     run(test)
-    assert not (data_dir / "userdata" / "qrbill.png").exists()
+    assert not (data_dir / "qrbill.png").exists()
 
 
 def fill_required(form):
@@ -378,7 +377,7 @@ def test_new_bill_saves_and_goes_to_list(data_dir):
         await pilot.pause(0.3)
         assert isinstance(app.screen, MainMenuScreen)
     run(test)
-    bill = load_bills(data_dir / "userdata" / "data.csv")[0]
+    bill = load_bills(data_dir / "data.csv")[0]
     assert (bill.description, bill.amount, bill.reference) == ("Neu", "12.50", "")
 
 
@@ -394,7 +393,7 @@ def test_new_bill_with_bad_amount_stays_on_form(data_dir):
         await pilot.pause(0.3)
         assert isinstance(app.screen, NewBillScreen)
     run(test)
-    assert load_bills(data_dir / "userdata" / "data.csv") == []
+    assert load_bills(data_dir / "data.csv") == []
 
 
 def test_saving_a_scanned_bill_returns_past_scan_menu(data_dir):
@@ -415,7 +414,7 @@ def test_saving_a_scanned_bill_returns_past_scan_menu(data_dir):
         await pilot.pause(0.3)
         assert isinstance(app.screen, BillsScreen)
     run(test)
-    assert load_bills(data_dir / "userdata" / "data.csv")[0].description == "Scan"
+    assert load_bills(data_dir / "data.csv")[0].description == "Scan"
 
 
 def test_recipient_template_add_validates_amount(data_dir):
@@ -432,7 +431,7 @@ def test_recipient_template_add_validates_amount(data_dir):
         await pilot.pause(0.3)
         assert not isinstance(app.screen, AddRecipientTemplateScreen)
     run(test)
-    rows = read_rows(data_dir / "userdata" / "recipientList.csv", RECIPIENT_TEMPLATE_COLUMNS)
+    rows = read_rows(data_dir / "recipientList.csv", RECIPIENT_TEMPLATE_COLUMNS)
     assert (rows[-1]["recipient_name"], rows[-1]["amount"]) == ("Firma", "12.50")
 
 
@@ -467,7 +466,7 @@ def test_manage_list_add_and_delete_with_buttons(data_dir):
         await pilot.pause(0.5)
         assert len(screen.query(ManageEntryItem)) == before
     run(test)
-    names = [r["payer_name"] for r in read_rows(data_dir / "userdata" / "payerList.csv",
+    names = [r["payer_name"] for r in read_rows(data_dir / "payerList.csv",
                                            PAYER_TEMPLATE_COLUMNS)]
     assert "Neu" not in names
 
@@ -496,3 +495,168 @@ def test_whole_bill_form_can_be_reached(data_dir, size):
             assert save.region.bottom <= scroller.region.bottom
             assert form.w_payer_name.region.height == 3
     asyncio.run(runner())
+
+
+async def submit_folder(app, pilot, text):
+    field = app.screen.query_one("#set-data-folder", Input)
+    field.value = text
+    field.focus()
+    await pilot.pause(0.1)
+    await pilot.press("enter")
+    await pilot.pause(0.3)
+    return field
+
+
+def test_settings_changes_data_folder(data_dir, isolated_home):
+    target = isolated_home / "elsewhere" / "bills"
+
+    async def test(app, pilot):
+        app.push_screen(SettingsScreen())
+        await pilot.pause(0.3)
+        assert app.screen.query_one("#set-data-folder", Input).value == str(data_dir)
+        field = await submit_folder(app, pilot, str(target))
+        assert app.core.data_folder == target
+        assert field.value == str(target)
+        await pilot.press("escape")
+        await pilot.pause(0.2)
+        app.push_screen(BillsScreen())
+        await pilot.pause(0.4)
+        assert app.screen.rows == []           # nothing from the old folder comes along
+    run(test)
+    assert not target.exists()                 # setting it creates nothing
+    assert load_settings(paths.config_dir() / "settings.toml").data_folder == str(target)
+
+
+def test_settings_rejects_a_bad_folder_and_keeps_the_old_one(data_dir, isolated_home):
+    not_a_folder = isolated_home / "a-file"
+    not_a_folder.write_text("x", encoding="utf-8")
+
+    async def test(app, pilot):
+        app.push_screen(SettingsScreen())
+        await pilot.pause(0.3)
+        for bad in (str(not_a_folder), "relative/path"):
+            await submit_folder(app, pilot, bad)
+            assert app.core.data_folder == data_dir
+            assert isinstance(app.screen, SettingsScreen)
+    run(test)
+    assert load_settings(paths.config_dir() / "settings.toml").data_folder == ""
+
+
+def test_startup_with_unusable_folder_gives_a_clear_message(isolated_home):
+    blocker = isolated_home / "a-file"
+    blocker.write_text("x", encoding="utf-8")
+    config = paths.private_dir(paths.config_dir())
+    (config / "settings.toml").write_text(f'[settings]\ndata_folder = "{blocker}"\n',
+                                          encoding="utf-8")
+    with pytest.raises(SystemExit) as exit_info:
+        bill_app.main()
+    assert "data_folder" in str(exit_info.value)
+
+
+# ---- asking before creating files ----
+MENU_POSITIONS = {"all": 0, "new": 1, "scan": 2, "summary": 3, "manage": 4, "settings": 5}
+
+
+async def choose_in_menu(pilot, key):
+    for _ in range(MENU_POSITIONS[key]):
+        await pilot.press("down")
+    await pilot.press("enter")
+    await pilot.pause(0.3)
+
+
+@pytest.mark.parametrize("key, screen", [
+    ("all", BillsScreen), ("new", NewBillScreen), ("scan", ScanBillScreen),
+])
+def test_bill_screens_ask_and_create_on_yes(isolated_home, key, screen):
+    folder = isolated_home / "Documents" / "BillHQ"
+
+    async def test(app, pilot):
+        await choose_in_menu(pilot, key)
+        assert isinstance(app.screen, ConfirmModal)
+        assert not folder.exists()
+        await pilot.click("#confirm-yes")
+        await pilot.pause(0.3)
+        assert type(app.screen) is screen
+        assert len(app.core.bills) == 3
+    run(test)
+    assert {p.name for p in folder.iterdir()} == {"data.csv", "recipientList.csv", "payerList.csv"}
+
+
+@pytest.mark.parametrize("answer", ["#confirm-no", "escape"])
+def test_saying_no_creates_nothing_and_stays_on_the_menu(isolated_home, answer):
+    async def test(app, pilot):
+        await choose_in_menu(pilot, "all")
+        if answer == "escape":
+            await pilot.press("escape")
+        else:
+            await pilot.click(answer)
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, MainMenuScreen)
+    run(test)
+    assert not (isolated_home / "Documents" / "BillHQ").exists()
+
+
+@pytest.mark.parametrize("key, screen", [
+    ("summary", SummaryScreen), ("manage", ManageScreen), ("settings", SettingsScreen),
+])
+def test_other_screens_dont_ask(isolated_home, key, screen):
+    async def test(app, pilot):
+        await choose_in_menu(pilot, key)
+        assert type(app.screen) is screen
+    run(test)
+    assert not (isolated_home / "Documents" / "BillHQ").exists()
+
+
+def test_complete_folder_doesnt_ask(data_dir):
+    async def test(app, pilot):
+        await choose_in_menu(pilot, "all")
+        assert type(app.screen) is BillsScreen
+    run(test)
+
+
+def test_partly_missing_files_keep_the_bills_that_exist(data_dir):
+    (data_dir / "payerList.csv").unlink()
+    save_bills(data_dir / "data.csv", [Bill(description="mine")])
+
+    async def test(app, pilot):
+        await choose_in_menu(pilot, "all")
+        assert isinstance(app.screen, ConfirmModal)
+        await pilot.click("#confirm-yes")
+        await pilot.pause(0.3)
+        assert [b.description for b in app.core.bills] == ["mine"]
+        assert app.core.payer_templates
+    run(test)
+
+
+def test_files_copied_in_by_hand_are_used_not_overwritten(isolated_home):
+    folder = isolated_home / "Documents" / "BillHQ"
+
+    async def test(app, pilot):
+        assert app.core.bills == []
+        create_missing_files(folder, bill_app.TEMPLATES_DIR)
+        save_bills(folder / "data.csv", [Bill(description="copied")])
+        await choose_in_menu(pilot, "all")
+        assert type(app.screen) is BillsScreen
+        assert [b.description for b in app.core.bills] == ["copied"]
+    run(test)
+
+
+def test_folder_that_cant_be_created_shows_an_error(isolated_home):
+    blocker = isolated_home / "a-file"
+    blocker.write_text("x", encoding="utf-8")
+
+    async def test(app, pilot):
+        app.core.data_folder = blocker / "bills"
+        await choose_in_menu(pilot, "all")
+        await pilot.click("#confirm-yes")
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, MainMenuScreen)
+    run(test)
+
+
+def test_path_with_brackets_shows_in_the_question(isolated_home):
+    async def test(app, pilot):
+        app.core.data_folder = isolated_home / "my [/bills]"
+        await choose_in_menu(pilot, "all")
+        assert isinstance(app.screen, ConfirmModal)
+    run(test)

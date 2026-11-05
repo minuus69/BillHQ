@@ -9,7 +9,7 @@ import pytest
 from appdata import csvparser
 from appdata.csvparser import (
     RECIPIENT_TEMPLATE_COLUMNS, PAYER_TEMPLATE_COLUMNS, Bill, Settings, load_bills, load_settings,
-    bootstrap_files, migrate_old_files, read_rows, save_bills, save_settings, sort_bills,
+    migrate_old_files, read_rows, save_bills, save_settings, sort_bills,
     write_rows,
 )
 
@@ -82,16 +82,9 @@ def test_settings_round_trip(tmp_path):
     assert (loaded.language, loaded.logsize) == ("de", 500)
 
 
-@pytest.mark.parametrize("name", [
-    "userdata/data.csv", "userdata/recipientList.csv", "userdata/payerList.csv",
-    "userdata/debitorList.csv", "userdata/creditorList.csv",
-    "userdata/data.csv.pre-rename.bak",
-    "userdata/data.csv.bak", "userdata/.data.csv.abc.tmp",
-    "userdata/qrbill.png", "userdata/qrbill.svg", "appdata/log",
-])
-def test_personal_files_are_git_ignored(name):
-    result = subprocess.run(["git", "check-ignore", "-q", name], cwd=REPO)
-    assert result.returncode == 0, f"{name} is not ignored"
+def test_old_log_is_git_ignored():
+    result = subprocess.run(["git", "check-ignore", "-q", "appdata/log"], cwd=REPO)
+    assert result.returncode == 0
 
 
 def test_csv_file_format_is_unchanged(tmp_path):
@@ -109,7 +102,7 @@ def test_existing_files_still_load_and_save_identically(tmp_path):
     swisscom = next(b for b in bills if b.description == "Swisscom: Abo")
     assert swisscom.recipient_name == "Swisscom AG"
     assert swisscom.payer_name == "Max Mustermann"
-    assert swisscom.amount == "79.9"
+    assert swisscom.amount == "79.90"
     assert swisscom.due_date == "2026-07-22"
 
     copy = tmp_path / "data.csv"
@@ -167,7 +160,7 @@ def write_old_files(folder):
 
 def test_old_files_are_converted_with_backups(tmp_path):
     write_old_files(tmp_path)
-    bootstrap_files(tmp_path, tmp_path / "appdata")
+    migrate_old_files(tmp_path)
 
     bill = load_bills(tmp_path / "data.csv")[0]
     assert bill.description == "Abo, Monat"

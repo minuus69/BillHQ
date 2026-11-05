@@ -38,14 +38,26 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
+## Where your data lives
+| What | Where | Notes |
+| ---- | ----- | ----- |
+| Bills and templates | `~/Documents/BillHQ/` | Change it under Settings, "Data folder". It can be anywhere. |
+| Settings | `~/.config/BillHQ/settings.toml` | Also remembers the data folder. Only your user account can open this folder. |
+| Log | `~/.config/BillHQ/log` | Same folder as the settings. |
+
+If `XDG_CONFIG_HOME` is set, the settings and log are in `$XDG_CONFIG_HOME/BillHQ/` instead. If BillHQ can't start because of its data folder, change `data_folder` in `settings.toml` by hand.
+
+BillHQ never creates or copies anything in the data folder on its own. When you create or open bills and files are missing from it, it asks whether to create them there from `templates/`. Files that are already there are kept.
+
+Changing the folder doesn't move your files, so copy them over yourself if you want to keep using them. CSV files from older versions are converted when BillHQ reads them.
+
 ## Project layout
 ```
 app.py            entry point
 appdata/          data layer: bills and CSV files, QR bills, translations, logging
 ui/               Textual app, the bill form, dialogs and styles.tcss
 ui/screens/       one module per area of the app
-userdata/         your bills, templates and settings (bills and templates are not in git)
-templates/        example CSV files
+templates/        starter CSV files for a new data folder
 tests/            pytest suite
 ```
 

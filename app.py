@@ -9,7 +9,7 @@ Navigation
 - Ctrl+Q                   : quit
 
 Structure: appdata/ = data layer (CSV, QR, i18n, logging), ui/ = screens,
-userdata/ = user files.
+templates/ = starter files for a new data folder.
 """
 from ui.app import main
 

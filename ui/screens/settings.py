@@ -1,6 +1,8 @@
 """The settings screen."""
 from __future__ import annotations
 
+import csv
+
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widget import Widget
@@ -42,6 +44,8 @@ class SettingsScreen(BackScreen):
                     [("DEBUG", "debug"), ("INFO", "info"), ("ERROR", "error")],
                     value=s.loglevel.lower(), id="set-loglevel"))
                 yield self._row(tr("set_logsize"), Input(value=str(s.logsize), id="set-logsize"))
+                yield self._row(tr("set_data_folder"), Input(
+                    value=str(self.core.data_folder), id="set-data-folder"))
         yield Static(tr("hint_nav"), id="footer-hint")
 
     @staticmethod
@@ -78,8 +82,23 @@ class SettingsScreen(BackScreen):
             await self.app.rebuild_ui()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.input.id != "set-logsize":
+        if event.input.id == "set-logsize":
+            self._set_logsize(event)
+        elif event.input.id == "set-data-folder":
+            self._set_data_folder(event)
+
+    def _set_data_folder(self, event: Input.Submitted) -> None:
+        try:
+            self.core.set_data_folder(event.value)
+        except (OSError, ValueError, csv.Error) as exc:
+            self.core.logger.error(f"data folder rejected: {exc}")
+            self.notify(tr("err_data_folder").format(err=exc), severity="error", timeout=10,
+                        markup=False)
             return
+        event.input.value = str(self.core.data_folder)
+        self.notify(tr("msg_data_folder_changed"))
+
+    def _set_logsize(self, event: Input.Submitted) -> None:
         try:
             n = max(100, int(event.value.strip()))
         except ValueError:
