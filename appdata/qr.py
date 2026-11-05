@@ -148,7 +148,7 @@ def _resolve_svg_calc(svg: str) -> str:
     """Turn calc(52.6mm - 3mm - 0.3mm) into 49.3mm.
 
     chqr uses these for the corner marks of empty address boxes (a bill with no
-    debtor), and cairosvg can't read calc().
+    payer), and cairosvg can't read calc().
     """
     def resolve(match: re.Match) -> str:
         first, *rest = re.findall(r"[\d.]+", match.group(1))
@@ -186,8 +186,8 @@ def generate_qr_bill(bill, settings, out_dir: Path, open_viewer: bool = True) ->
         reference_type = "QRR"
 
     creditor = Creditor(
-        name=bill.payee_name, street=bill.payee_street, building_number=bill.payee_building_nr,
-        postal_code=bill.payee_postal_code, city=bill.payee_city, country=bill.payee_country,
+        name=bill.recipient_name, street=bill.recipient_street, building_number=bill.recipient_building_nr,
+        postal_code=bill.recipient_postal_code, city=bill.recipient_city, country=bill.recipient_country,
     )
     # the person paying is optional on a QR bill
     debtor = None
@@ -314,7 +314,7 @@ def format_reference(ref: str) -> str:
 def parse_swiss_qr_payload(text: str) -> dict:
     """Parse a Swiss QR bill payload (SPC) into bill field names.
 
-    The QR standard's creditor is our payee, its ultimate debtor is our payer.
+    The QR standard's creditor is our recipient, its ultimate debtor is our payer.
     """
     lines = (text or "").replace("\r", "").split("\n")
     if len(lines) < 31 or lines[0].strip() != "SPC":
@@ -326,8 +326,8 @@ def parse_swiss_qr_payload(text: str) -> dict:
     return {
         "account": format_iban(g(3)),
         # QR creditor (lines 4-10)
-        "payee_name": g(5), "payee_street": g(6), "payee_building_nr": g(7),
-        "payee_postal_code": g(8), "payee_city": g(9), "payee_country": g(10),
+        "recipient_name": g(5), "recipient_street": g(6), "recipient_building_nr": g(7),
+        "recipient_postal_code": g(8), "recipient_city": g(9), "recipient_country": g(10),
         "amount": g(18), "currency": g(19),
         # QR ultimate debtor (lines 20-26)
         "payer_name": g(21), "payer_street": g(22), "payer_building_nr": g(23),

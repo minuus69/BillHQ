@@ -155,7 +155,7 @@ class BillsScreen(BackScreen):
         results = []
         for bill in bills:
             searchable = (
-                f"{bill.description} {bill.note} {bill.payee_name} {bill.payer_name} "
+                f"{bill.description} {bill.note} {bill.recipient_name} {bill.payer_name} "
                 f"{bill.private_note} {bill.reference} {bill.account}"
             ).lower()
             if self._search_query in searchable:

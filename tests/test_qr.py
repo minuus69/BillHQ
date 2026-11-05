@@ -16,12 +16,12 @@ QR_REF = "21 00000 00003 13947 14300 09017"
 
 BILL = Bill(
     description="Abo", amount="79.90", currency="CHF", account=QR_IBAN, reference=QR_REF,
-    payee_name="Swisscom AG", payee_street="Alte Tiefenaustrasse", payee_building_nr="6",
-    payee_postal_code="3048", payee_city="Worblaufen", payee_country="CH",
+    recipient_name="Swisscom AG", recipient_street="Alte Tiefenaustrasse", recipient_building_nr="6",
+    recipient_postal_code="3048", recipient_city="Worblaufen", recipient_country="CH",
     payer_name="Max Mustermann", payer_street="Musterweg", payer_building_nr="69",
     payer_postal_code="8000", payer_city="Zürich", payer_country="CH",
 )
-NO_DEBTOR = {f: "" for f in ("payer_name", "payer_street", "payer_building_nr", "payer_postal_code", "payer_city", "payer_country")}
+NO_PAYER = {f: "" for f in ("payer_name", "payer_street", "payer_building_nr", "payer_postal_code", "payer_city", "payer_country")}
 
 
 def round_trip(bill, tmp_path):
@@ -36,7 +36,7 @@ def test_qr_reference_round_trip(tmp_path):
     assert data["account"] == QR_IBAN
     assert data["reference"] == QR_REF
     assert data["amount"] == "79.90"
-    assert data["payee_name"] == "Swisscom AG"
+    assert data["recipient_name"] == "Swisscom AG"
     assert data["payer_name"] == "Max Mustermann"
 
 
@@ -50,10 +50,10 @@ def test_no_reference(tmp_path):
     assert data["reference"] == ""
 
 
-def test_no_debtor(tmp_path):
-    data = round_trip(replace(BILL, **NO_DEBTOR), tmp_path)
+def test_no_payer(tmp_path):
+    data = round_trip(replace(BILL, **NO_PAYER), tmp_path)
     assert data["payer_name"] == ""
-    assert data["payee_name"] == "Swisscom AG"
+    assert data["recipient_name"] == "Swisscom AG"
 
 
 def test_svg_calc_is_resolved():
@@ -73,7 +73,7 @@ def test_pdf_scan(tmp_path):
     pdf = tmp_path / "bill.pdf"
     doc.save(pdf)
     doc.close()
-    assert qr.parse_qr_from_file(str(pdf))["payee_name"] == "Swisscom AG"
+    assert qr.parse_qr_from_file(str(pdf))["recipient_name"] == "Swisscom AG"
 
 
 @pytest.mark.parametrize("change, message", [
@@ -108,7 +108,7 @@ def fake_run(monkeypatch, returncode, stdout=""):
 
 def test_webcam_scan_parses_found_payload(monkeypatch):
     calls = fake_run(monkeypatch, 0, PAYLOAD)
-    assert qr.scan_qr_webcam()["payee_name"] == "Firma"
+    assert qr.scan_qr_webcam()["recipient_name"] == "Firma"
     cmd, kwargs = calls[0]
     assert cmd[1:] == ["-m", "appdata.qr_webcam"]
     assert (Path(kwargs["cwd"]) / "appdata" / "qr_webcam.py").exists()

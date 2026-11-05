@@ -15,10 +15,10 @@ from ui.screens.settings import SettingsScreen
 from ui.screens.summary import SummaryScreen
 from ui.screens.scan import ScanEditScreen
 from ui.screens.templates import (
-    AddPayerTemplateScreen, AddPayeeTemplateScreen, ManageEntryItem, ManageListScreen, ManageScreen,
+    AddPayerTemplateScreen, AddRecipientTemplateScreen, ManageEntryItem, ManageListScreen, ManageScreen,
 )
 from appdata.csvparser import (
-    PAYER_TEMPLATE_COLUMNS, PAYEE_TEMPLATE_COLUMNS, Bill, load_bills, load_settings, read_rows, save_bills,
+    PAYER_TEMPLATE_COLUMNS, RECIPIENT_TEMPLATE_COLUMNS, Bill, load_bills, load_settings, read_rows, save_bills,
     write_rows,
 )
 from appdata.languages import set_language
@@ -85,7 +85,7 @@ def test_enter_in_search_moves_to_the_list(data_dir):
 
 def test_manage_list_keyboard_selection(data_dir):
     async def test(app, pilot):
-        app.push_screen(ManageListScreen("payee"))
+        app.push_screen(ManageListScreen("recipient"))
         await pilot.pause(0.3)
         await pilot.press("down")
         await pilot.pause(0.1)
@@ -110,12 +110,12 @@ def test_clearing_a_template_selection_is_safe(data_dir):
     async def test(app, pilot):
         app.push_screen(NewBillScreen())
         await pilot.pause(0.2)
-        template = app.screen.query_one("#tpl-payee", Select)
+        template = app.screen.query_one("#tpl-recipient", Select)
         template.value = 0
         await pilot.pause(0.2)
         form = app.screen.form
         assert form.w_description.value == "Steuerrechnung"
-        assert form.w_payee_name.value == "Finanzamt Zürich"
+        assert form.w_recipient_name.value == "Finanzamt Zürich"
         assert form.w_amount.value == "1250.00"
         assert form.w_currency.value == "CHF"
         app.screen.query_one("#tpl-payer", Select).value = 0
@@ -134,27 +134,27 @@ def test_untouched_dropdown_saves_as_empty(data_dir):
         app.screen.query_one("#btn-template-save").press()
         await pilot.pause(0.3)
     run(test)
-    rows = read_rows(data_dir / "userdata" / "creditorList.csv", PAYER_TEMPLATE_COLUMNS)
+    rows = read_rows(data_dir / "userdata" / "payerList.csv", PAYER_TEMPLATE_COLUMNS)
     assert rows[-1]["payer_name"] == "Test"
     assert rows[-1]["payer_country"] == ""
 
 
 def test_old_select_null_cells_are_cleaned_on_load(tmp_path):
-    path = tmp_path / "creditorList.csv"
+    path = tmp_path / "payerList.csv"
     write_rows(path, PAYER_TEMPLATE_COLUMNS, [{"payer_name": "Old", "payer_country": "Select.NULL"}])
     assert read_rows(path, PAYER_TEMPLATE_COLUMNS)[0]["payer_country"] == ""
 
 
 def test_editing_keeps_unusual_and_empty_values(data_dir):
     bill = Bill(description="x", amount="1.00", currency="GBP", account="a",
-                payee_name="n", payee_postal_code="1", payee_city="c", payee_country="EE", payer_country="")
+                recipient_name="n", recipient_postal_code="1", recipient_city="c", recipient_country="EE", payer_country="")
 
     async def test(app, pilot):
         app.push_screen(EditBillScreen(bill))
         await pilot.pause(0.2)
         saved, error = app.screen.form.collect()
         assert error is None
-        assert (saved.currency, saved.payee_country, saved.payer_country) == ("GBP", "EE", "")
+        assert (saved.currency, saved.recipient_country, saved.payer_country) == ("GBP", "EE", "")
     run(test)
 
 
@@ -162,9 +162,9 @@ def test_editing_keeps_unusual_and_empty_values(data_dir):
 def test_brackets_in_names_render(data_dir, name):
     async def test(app, pilot):
         app.core.payer_templates.append({"payer_name": name, "payer_country": "CH"})
-        app.core.payee_templates.append({"description": name, "payee_name": name})
+        app.core.recipient_templates.append({"description": name, "recipient_name": name})
         app.core.bills.append(Bill(description=name, due_date="2030-01-01", amount="1",
-                                   currency="CHF", payee_name=name, payer_name=name))
+                                   currency="CHF", recipient_name=name, payer_name=name))
         for screen in (ManageListScreen("payer"), NewBillScreen(),
                        BillsScreen(), SummaryScreen()):
             app.push_screen(screen)
@@ -256,7 +256,7 @@ def test_main_menu_opens_screens_with_keyboard(data_dir, position, screen):
 def seed(data_dir, *descriptions):
     save_bills(data_dir / "userdata" / "data.csv", [
         Bill(description=d, due_date="2030-01-01", amount="1.00", currency="CHF", account="a",
-             payee_name="n", payee_postal_code="1", payee_city="c", payee_country="CH")
+             recipient_name="n", recipient_postal_code="1", recipient_city="c", recipient_country="CH")
         for d in descriptions])
 
 
@@ -358,9 +358,9 @@ def fill_required(form):
     form.w_description.value = "Neu"
     form.w_amount.value = "12,50"
     form.w_account.value = "CH93 0076 2011 6238 5295 7"
-    form.w_payee_name.value = "Firma"
-    form.w_payee_postal_code.value = "8000"
-    form.w_payee_city.value = "Zürich"
+    form.w_recipient_name.value = "Firma"
+    form.w_recipient_postal_code.value = "8000"
+    form.w_recipient_city.value = "Zürich"
 
 
 def test_new_bill_saves_and_goes_to_list(data_dir):
@@ -404,8 +404,8 @@ def test_saving_a_scanned_bill_returns_past_scan_menu(data_dir):
         app.push_screen(ScanBillScreen())
         await pilot.pause(0.2)
         app.screen._open_form({"description": "Scan", "amount": "5.00", "currency": "CHF",
-                               "account": "a", "payee_name": "n", "payee_postal_code": "1", "payee_city": "c",
-                               "payee_country": "CH"})
+                               "account": "a", "recipient_name": "n", "recipient_postal_code": "1", "recipient_city": "c",
+                               "recipient_country": "CH"})
         await pilot.pause(0.3)
         assert isinstance(app.screen, ScanEditScreen)
         app.screen.query_one("#btn-form-save", Button).press()
@@ -418,22 +418,22 @@ def test_saving_a_scanned_bill_returns_past_scan_menu(data_dir):
     assert load_bills(data_dir / "userdata" / "data.csv")[0].description == "Scan"
 
 
-def test_debitor_template_add_validates_amount(data_dir):
+def test_recipient_template_add_validates_amount(data_dir):
     async def test(app, pilot):
-        app.push_screen(AddPayeeTemplateScreen())
+        app.push_screen(AddRecipientTemplateScreen())
         await pilot.pause(0.2)
-        app.screen.query_one("#template-payee_name", Input).value = "Firma"
+        app.screen.query_one("#template-recipient_name", Input).value = "Firma"
         app.screen.query_one("#template-amount", Input).value = "1,250"
         app.screen.query_one("#btn-template-save", Button).press()
         await pilot.pause(0.3)
-        assert isinstance(app.screen, AddPayeeTemplateScreen)
+        assert isinstance(app.screen, AddRecipientTemplateScreen)
         app.screen.query_one("#template-amount", Input).value = "12,50"
         app.screen.query_one("#btn-template-save", Button).press()
         await pilot.pause(0.3)
-        assert not isinstance(app.screen, AddPayeeTemplateScreen)
+        assert not isinstance(app.screen, AddRecipientTemplateScreen)
     run(test)
-    rows = read_rows(data_dir / "userdata" / "debitorList.csv", PAYEE_TEMPLATE_COLUMNS)
-    assert (rows[-1]["payee_name"], rows[-1]["amount"]) == ("Firma", "12.50")
+    rows = read_rows(data_dir / "userdata" / "recipientList.csv", RECIPIENT_TEMPLATE_COLUMNS)
+    assert (rows[-1]["recipient_name"], rows[-1]["amount"]) == ("Firma", "12.50")
 
 
 def test_template_without_name_is_rejected(data_dir):
@@ -467,7 +467,7 @@ def test_manage_list_add_and_delete_with_buttons(data_dir):
         await pilot.pause(0.5)
         assert len(screen.query(ManageEntryItem)) == before
     run(test)
-    names = [r["payer_name"] for r in read_rows(data_dir / "userdata" / "creditorList.csv",
+    names = [r["payer_name"] for r in read_rows(data_dir / "userdata" / "payerList.csv",
                                            PAYER_TEMPLATE_COLUMNS)]
     assert "Neu" not in names
 
@@ -485,7 +485,7 @@ def test_whole_bill_form_can_be_reached(data_dir, size):
             app.push_screen(NewBillScreen())
             await pilot.pause(0.4)
             form = app.screen.form
-            for field in ("w_payer_name", "w_payer_city", "w_payer_country", "w_pnote"):
+            for field in ("w_payer_name", "w_payer_city", "w_payer_country", "w_private_note"):
                 widget = getattr(form, field)
                 assert widget.region.bottom <= form.region.bottom, field
             save = app.screen.query_one("#btn-form-save", Button)

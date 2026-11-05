@@ -16,26 +16,26 @@ class NewBillScreen(BillFormScreen):
 
     def initial_bill(self) -> Bill:
         settings = self.core.settings
-        return Bill(currency=settings.default_currency, payee_country=settings.default_country,
+        return Bill(currency=settings.default_currency, recipient_country=settings.default_country,
                     payer_country=settings.default_country)
 
     def compose_above_form(self) -> ComposeResult:
         with Horizontal(classes="tpl-row"):
             with Vertical(classes="tpl-cell"):
-                yield Label(tr("tpl_payee"))
-                yield Select(self._options(self.core.payee_templates, payee=True), allow_blank=True,
-                             prompt=tr("tpl_none"), id="tpl-payee")
+                yield Label(tr("tpl_recipient"))
+                yield Select(self._options(self.core.recipient_templates, recipient=True), allow_blank=True,
+                             prompt=tr("tpl_none"), id="tpl-recipient")
             with Vertical(classes="tpl-cell"):
                 yield Label(tr("tpl_payer"))
-                yield Select(self._options(self.core.payer_templates, payee=False), allow_blank=True,
+                yield Select(self._options(self.core.payer_templates, recipient=False), allow_blank=True,
                              prompt=tr("tpl_none"), id="tpl-payer")
 
     @staticmethod
-    def _options(rows: list[dict], payee: bool) -> list[tuple[str, int]]:
+    def _options(rows: list[dict], recipient: bool) -> list[tuple[str, int]]:
         opts = []
         for i, r in enumerate(rows):
-            if payee:
-                label = " · ".join(p for p in (r.get("description", ""), r.get("payee_name", ""))
+            if recipient:
+                label = " · ".join(p for p in (r.get("description", ""), r.get("recipient_name", ""))
                                    if p.strip())
             else:
                 label = (r.get("payer_name") or "").strip()
@@ -45,8 +45,8 @@ class NewBillScreen(BillFormScreen):
     def on_select_changed(self, event: Select.Changed) -> None:
         if not isinstance(event.value, int):      # dropdown cleared
             return
-        if event.select.id == "tpl-payee":
-            template = self.core.payee_templates[event.value]
+        if event.select.id == "tpl-recipient":
+            template = self.core.recipient_templates[event.value]
         elif event.select.id == "tpl-payer":
             template = self.core.payer_templates[event.value]
         else:

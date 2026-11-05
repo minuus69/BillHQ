@@ -1,4 +1,4 @@
-"""Data layer: CSV files (data.csv, debitorList.csv, creditorList.csv),
+"""Data layer: CSV files (data.csv, recipientList.csv, payerList.csv),
 settings.toml handling, date helpers and sorting.
 
 NOTE: dates are stored in the CSVs as ISO (yyyy-mm-dd) and only *displayed*
@@ -24,46 +24,51 @@ from appdata.languages import LANG_CODES
 # --------------------------------------------------------------------------- #
 # Field definitions
 # --------------------------------------------------------------------------- #
-# Field names in the code -> column names in the CSV files. The columns are the
-# on-disk format, so existing files keep working. In the columns, d* means the
-# payee (who gets the money, "Payable to" on a QR bill) and c* means the payer.
-_PAYEE_COLUMNS = {
-    "payee_name": "dName", "payee_street": "dStreet", "payee_building_nr": "dBuildingNr",
-    "payee_postal_code": "dPostalCode", "payee_city": "dCity", "payee_country": "dCountry",
+# Field names in the code -> column names in the CSV files.
+# Recipient (r*) gets the money, "Payable to" on a QR bill. Payer (p*) pays.
+_RECIPIENT_COLUMNS = {
+    "recipient_name": "rName", "recipient_street": "rStreet", "recipient_building_nr": "rBuildingNr",
+    "recipient_postal_code": "rPostalCode", "recipient_city": "rCity", "recipient_country": "rCountry",
 }
 _PAYER_COLUMNS = {
-    "payer_name": "cName", "payer_street": "cStreet", "payer_building_nr": "cBuildingNr",
-    "payer_postal_code": "cPostalCode", "payer_city": "cCity", "payer_country": "cCountry",
+    "payer_name": "pName", "payer_street": "pStreet", "payer_building_nr": "pBuildingNr",
+    "payer_postal_code": "pPostalCode", "payer_city": "pCity", "payer_country": "pCountry",
 }
 BILL_COLUMNS = {
     "description": "description", "due_date": "dueDate", "paid_date": "paidDate",
     "paid_with": "paidWith", "paid_checked": "paidChecked", "amount": "bAmount",
     "currency": "bCurrency", "account": "bAccount", "reference": "bReference", "note": "note",
-    **_PAYEE_COLUMNS, **_PAYER_COLUMNS, "private_note": "privateNote",
+    **_RECIPIENT_COLUMNS, **_PAYER_COLUMNS, "private_note": "privateNote",
 }
 BILL_FIELDS = list(BILL_COLUMNS)
 
 # Template rows use the same names as Bill, so a template can be applied field by field.
-PAYEE_TEMPLATE_COLUMNS = {
+RECIPIENT_TEMPLATE_COLUMNS = {
     "description": "description", "amount": "amount", "currency": "currency",
-    "account": "account", **_PAYEE_COLUMNS,
+    "account": "account", **_RECIPIENT_COLUMNS,
 }
 PAYER_TEMPLATE_COLUMNS = dict(_PAYER_COLUMNS)
 
 # fields marked with * in the spec: must be non-empty to be saved
 REQUIRED_FIELDS = [
     "description", "amount", "currency", "account",
-    "payee_name", "payee_postal_code", "payee_city", "payee_country",
+    "recipient_name", "recipient_postal_code", "recipient_city", "recipient_country",
 ]
+
+# Older versions called these d* and c*, in debitorList.csv and creditorList.csv.
+LEGACY_COLUMNS = {old: new for new, old in (
+    *((c, "d" + c[1:]) for c in _RECIPIENT_COLUMNS.values()),
+    *((c, "c" + c[1:]) for c in _PAYER_COLUMNS.values()),
+)}
 
 # translation keys for field labels (used in validation errors)
 FIELD_LABELS = {
     "description": "f_description", "due_date": "f_due_date", "paid_date": "f_paid_date",
     "paid_with": "f_paid_with", "paid_checked": "f_paid_checked", "amount": "f_amount",
     "currency": "f_currency", "account": "f_account", "reference": "f_reference",
-    "note": "f_note", "payee_name": "f_payee_name", "payee_street": "f_street",
-    "payee_building_nr": "f_building_nr", "payee_postal_code": "f_postal_code", "payee_city": "f_city",
-    "payee_country": "f_country", "payer_name": "f_payer_name", "payer_street": "f_street",
+    "note": "f_note", "recipient_name": "f_recipient_name", "recipient_street": "f_street",
+    "recipient_building_nr": "f_building_nr", "recipient_postal_code": "f_postal_code", "recipient_city": "f_city",
+    "recipient_country": "f_country", "payer_name": "f_payer_name", "payer_street": "f_street",
     "payer_building_nr": "f_building_nr", "payer_postal_code": "f_postal_code", "payer_city": "f_city",
     "payer_country": "f_country", "private_note": "f_private_note",
 }
@@ -91,12 +96,12 @@ class Bill:
     account: str = ""
     reference: str = ""
     note: str = ""
-    payee_name: str = ""
-    payee_street: str = ""
-    payee_building_nr: str = ""
-    payee_postal_code: str = ""
-    payee_city: str = ""
-    payee_country: str = ""
+    recipient_name: str = ""
+    recipient_street: str = ""
+    recipient_building_nr: str = ""
+    recipient_postal_code: str = ""
+    recipient_city: str = ""
+    recipient_country: str = ""
     payer_name: str = ""
     payer_street: str = ""
     payer_building_nr: str = ""
@@ -350,8 +355,8 @@ def _sample_bills() -> list[Bill]:
             account="CH93 0076 2011 6238 5295 7",
             reference="21 00000 00003 13947 14300 09017",
             note="Steuerrechnung",
-            payee_name="Finanzamt Zürich", payee_street="Sihlstrasse", payee_building_nr="23",
-            payee_postal_code="8001", payee_city="Zürich", payee_country="CH",
+            recipient_name="Finanzamt Zürich", recipient_street="Sihlstrasse", recipient_building_nr="23",
+            recipient_postal_code="8001", recipient_city="Zürich", recipient_country="CH",
             payer_name="Max Muster", payer_street="Musterweg", payer_building_nr="12",
             payer_postal_code="8000", payer_city="Zürich", payer_country="CH",
         ),
@@ -361,8 +366,8 @@ def _sample_bills() -> list[Bill]:
             amount="89.99", currency="EUR",
             account="CH12 1234 1234 1234 1234 4",
             reference="RF18 5390 0754 7018 5",
-            payee_name="Beispiel Handel AG", payee_street="Bahnhofstrasse", payee_building_nr="1",
-            payee_postal_code="3000", payee_city="Bern", payee_country="CH",
+            recipient_name="Beispiel Handel AG", recipient_street="Bahnhofstrasse", recipient_building_nr="1",
+            recipient_postal_code="3000", recipient_city="Bern", recipient_country="CH",
             payer_name="Max Muster", payer_street="Musterweg", payer_building_nr="12",
             payer_postal_code="8000", payer_city="Zürich", payer_country="CH",
         ),
@@ -374,17 +379,40 @@ def _sample_bills() -> list[Bill]:
             amount="79.90", currency="CHF",
             account="CH93 0076 2011 6238 5295 7",
             reference="21 00000 00003 13947 14300 09017",
-            payee_name="Swisscom AG", payee_street="Alte Tiefenaustrasse", payee_building_nr="6",
-            payee_postal_code="3048", payee_city="Worblaufen", payee_country="CH",
+            recipient_name="Swisscom AG", recipient_street="Alte Tiefenaustrasse", recipient_building_nr="6",
+            recipient_postal_code="3048", recipient_city="Worblaufen", recipient_country="CH",
             payer_name="Max Muster", payer_street="Musterweg", payer_building_nr="12",
             payer_postal_code="8000", payer_city="Zürich", payer_country="CH",
         ),
     ]
 
 
+def _migrate_csv(old: Path, new: Path) -> None:
+    """Convert a file with the old d*/c* columns, keeping the original as a backup."""
+    if not old.exists() or (old != new and new.exists()):
+        return
+    with open(old, newline="", encoding="utf-8") as fh:
+        rows = list(csv.reader(fh))
+    if not rows or not LEGACY_COLUMNS.keys() & set(rows[0]):
+        return
+    shutil.copy2(old, old.with_name(old.name + ".pre-rename.bak"))
+    rows[0] = [LEGACY_COLUMNS.get(column, column) for column in rows[0]]
+    with _atomic_open(new) as fh:
+        csv.writer(fh, lineterminator="\r\n").writerows(rows)
+    if old != new:
+        old.unlink()
+
+
+def migrate_old_files(userdata: Path) -> None:
+    _migrate_csv(userdata / "data.csv", userdata / "data.csv")
+    _migrate_csv(userdata / "debitorList.csv", userdata / "recipientList.csv")
+    _migrate_csv(userdata / "creditorList.csv", userdata / "payerList.csv")
+
+
 def bootstrap_files(userdata: Path, appdata: Path) -> None:
     userdata.mkdir(parents=True, exist_ok=True)
     appdata.mkdir(parents=True, exist_ok=True)
+    migrate_old_files(userdata)
 
     log_path = appdata / "log"
     if not log_path.exists():
@@ -394,18 +422,18 @@ def bootstrap_files(userdata: Path, appdata: Path) -> None:
     if not settings_path.exists():
         save_settings(settings_path, Settings())
 
-    deb_path = userdata / "debitorList.csv"
+    deb_path = userdata / "recipientList.csv"
     if not deb_path.exists():
-        write_rows(deb_path, PAYEE_TEMPLATE_COLUMNS, [
+        write_rows(deb_path, RECIPIENT_TEMPLATE_COLUMNS, [
             {"description": "Steuerrechnung", "amount": "1250.00", "currency": "CHF",
-             "payee_name": "Finanzamt Zürich", "payee_street": "Sihlstrasse", "payee_building_nr": "23",
-             "payee_postal_code": "8001", "payee_city": "Zürich", "payee_country": "CH"},
+             "recipient_name": "Finanzamt Zürich", "recipient_street": "Sihlstrasse", "recipient_building_nr": "23",
+             "recipient_postal_code": "8001", "recipient_city": "Zürich", "recipient_country": "CH"},
             {"description": "Stromrechnung", "amount": "85.40", "currency": "CHF",
-             "payee_name": "EWZ", "payee_street": "Technoparkstrasse", "payee_building_nr": "1",
-             "payee_postal_code": "8005", "payee_city": "Zürich", "payee_country": "CH"},
+             "recipient_name": "EWZ", "recipient_street": "Technoparkstrasse", "recipient_building_nr": "1",
+             "recipient_postal_code": "8005", "recipient_city": "Zürich", "recipient_country": "CH"},
         ])
 
-    cred_path = userdata / "creditorList.csv"
+    cred_path = userdata / "payerList.csv"
     if not cred_path.exists():
         write_rows(cred_path, PAYER_TEMPLATE_COLUMNS, [
             {"payer_name": "Max Muster", "payer_street": "Musterweg", "payer_building_nr": "12",

@@ -49,7 +49,7 @@ templates/        example CSV files
 tests/            pytest suite
 ```
 
-In the code, **payee** is who gets the money ("Payable to" on a QR bill) and **payer** is who pays ("Payable by"). In the CSV files they're the `d*` and `c*` columns, stored in `debitorList.csv` and `creditorList.csv`.
+**Recipient** (`r*` columns, `recipientList.csv`) gets the money, "Payable to" on a QR bill. **Payer** (`p*` columns, `payerList.csv`) pays, "Payable by". Files from older versions (`d*`/`c*` columns, `debitorList.csv`/`creditorList.csv`) convert automatically at startup, and the originals are kept as `*.pre-rename.bak`.
 
 ## Usage
 | Key     | Action      |

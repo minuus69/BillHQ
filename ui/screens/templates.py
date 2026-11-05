@@ -1,4 +1,4 @@
-"""Managing the payee and payer template lists."""
+"""Managing the recipient and payer template lists."""
 from __future__ import annotations
 
 from typing import NamedTuple
@@ -20,7 +20,7 @@ class ManageScreen(MenuScreen):
         return tr("menu_manage")
 
     def menu_items(self) -> list[MenuItem]:
-        return [MenuItem(tr("manage_payees"), "payee"),
+        return [MenuItem(tr("manage_recipients"), "recipient"),
                 MenuItem(tr("manage_payers"), "payer")]
 
     def menu_selected(self, key: str) -> None:
@@ -36,7 +36,7 @@ class ManageListScreen(BackScreen):
 
     def __init__(self, kind: str):
         super().__init__()
-        self.kind = kind  # "payee" or "payer"
+        self.kind = kind  # "recipient" or "payer"
         self.selected = 0
 
     @property
@@ -70,8 +70,8 @@ class ManageListScreen(BackScreen):
             await container.mount(item)
 
     def _entry_label(self, entry: dict) -> str:
-        if self.kind == "payee":
-            parts = [entry.get("description", ""), entry.get("payee_name", "")]
+        if self.kind == "recipient":
+            parts = [entry.get("description", ""), entry.get("recipient_name", "")]
         else:
             parts = [entry.get("payer_name", "")]
         return " · ".join(p for p in parts if p.strip()) or "–"
@@ -187,22 +187,22 @@ class TemplateFormScreen(BackScreen):
         self.app.pop_screen()
 
 
-class AddPayeeTemplateScreen(TemplateFormScreen):
-    kind = "payee"
-    title_key = "add_payee_title"
-    name_field = "payee_name"
-    name_label_key = "f_payee_name"
+class AddRecipientTemplateScreen(TemplateFormScreen):
+    kind = "recipient"
+    title_key = "add_recipient_title"
+    name_field = "recipient_name"
+    name_label_key = "f_recipient_name"
     fields = [
         TemplateField("description", "f_description"),
         TemplateField("amount", "f_amount", placeholder="0.00"),
         TemplateField("currency", "f_currency", CURRENCIES),
         TemplateField("account", "f_account_iban", placeholder="CH12 1234 1234 1234 1234 4"),
-        TemplateField("payee_name", "f_payee_name"),
-        TemplateField("payee_street", "f_street"),
-        TemplateField("payee_building_nr", "f_building_nr"),
-        TemplateField("payee_postal_code", "f_postal_code"),
-        TemplateField("payee_city", "f_city"),
-        TemplateField("payee_country", "f_country", COUNTRIES),
+        TemplateField("recipient_name", "f_recipient_name"),
+        TemplateField("recipient_street", "f_street"),
+        TemplateField("recipient_building_nr", "f_building_nr"),
+        TemplateField("recipient_postal_code", "f_postal_code"),
+        TemplateField("recipient_city", "f_city"),
+        TemplateField("recipient_country", "f_country", COUNTRIES),
     ]
 
 
@@ -221,4 +221,4 @@ class AddPayerTemplateScreen(TemplateFormScreen):
     ]
 
 
-TEMPLATE_FORMS = {"payee": AddPayeeTemplateScreen, "payer": AddPayerTemplateScreen}
+TEMPLATE_FORMS = {"recipient": AddRecipientTemplateScreen, "payer": AddPayerTemplateScreen}

@@ -29,8 +29,8 @@ f_account,Account (IBAN),Konto (IBAN),Konto (IBAN),Conto (IBAN),Compte (IBAN),Qu
 f_account_iban,Account (IBAN),Konto (IBAN),Konto (IBAN),Conto (IBAN),Compte (IBAN),Quint (IBAN),Рачун (ИБАН),Счёт (IBAN),口座（IBAN）,账户（IBAN）,Loot Vault
 f_reference,Reference,Referenz,Referänz,Riferimento,Référence,Referenza,Референца,Референс,参照番号,参考号,Loot Code
 f_note,Note,Bemerkung,Bemerkig,Nota,Note,Nota,Белешка,Примечание,メモ,备注,Ping
-f_payee_name,Creditor,Gläubiger,Gläubiger,Creditore,Créancier,Creditur,Поверилац,Кредитор,債権者,债权人,Creditor
-f_payer_name,Debtor,Schuldner,Schuldner,Debitore,Débiteur,Debitur,Дужник,Должник,債務者,债务人,Debtor
+f_recipient_name,Recipient,Empfänger,Empfänger,Beneficiario,Bénéficiaire,Retschavider,Прималац,Получатель,受取人,收款人,Recipient
+f_payer_name,Payer,Zahler,Zahler,Pagatore,Payeur,Pajader,Платилац,Плательщик,支払人,付款人,Payer
 f_street,Street,Strasse,Strasse,Via,Rue,Via,Улица,Улица,通り,街道,POI Street
 f_building_nr,Nr.,Nr.,Nr.,N°,N°,Nr.,Број,Номер,番号,号,Tile #
 f_postal_code,Postal code,PLZ,PLZ,CAP,Code postal,Code postal,Поштански број,Почтовый индекс,郵便番号,邮政编码,Zone Code
@@ -39,8 +39,8 @@ f_country,Country,Land,Land,Paese,Pays,Pais,Земља,Страна,国,国家,I
 f_private_note,Private note,Private Notiz,Privati Notiz,Nota privata,Note privée,Nota privata,Приватна белешка,Личная заметка,プライベートメモ,私人备注,Secret Ping
 bill_section,Bill,Rechnung,Rächnig,Fattura,Facture,Quint,Рачун,Счёт,請求書,账单,Quest
 payment_section,Payment,Zahlung,Zahlig,Pagamento,Paiement,Pajament,Плаћање,Оплата,支払い,支付,Clutch Info
-payee_section,Creditor,Gläubiger,Gläubiger,Creditore,Créancier,Creditur,Поверилац,Кредитор,債権者,债权人,Creditor
-payer_section,Debtor,Schuldner,Schuldner,Debitore,Débiteur,Debitur,Дужник,Должник,債務者,债务人,Debtor
+recipient_section,Recipient,Empfänger,Empfänger,Beneficiario,Bénéficiaire,Retschavider,Прималац,Получатель,受取人,收款人,Recipient
+payer_section,Payer,Zahler,Zahler,Pagatore,Payeur,Pajader,Платилац,Плательщик,支払人,付款人,Payer
 summary_open_total,Open bills (total),Offene Rechnungen (Total),Offeni Rächnige (Total),Fatture aperte (totale),Factures ouvertes (total),Quints averts (total),Отворени рачуни (укупно),Открытые счета (всего),未払い請求書（合計）,未付账单（总计）,Storm Quests (total)
 summary_due14,Due within 14 days,Innert 14 Tagen fällig,Innert 14 Täg fällig,In scadenza entro 14 giorni,Échéance dans les 14 jours,Scadenza en 14 dis,Рок у року од 14 дана,Срок в течение 14 дней,14日以内に期日,14天内到期,Storm Closing in 14 Days
 summary_due30,Due in 15-30 days,In 15-30 Tagen fällig,I 15-30 Täg fällig,In scadenza in 15-30 giorni,Échéance dans 15-30 jours,Scadenza en 15-30 dis,Рок за 15-30 дана,Срок через 15-30 дней,15〜30日後に期日,15-30天后到期,Storm in 15-30 Days
@@ -63,8 +63,8 @@ sort_desc,descending,absteigend,abstiigend,decrescente,décroissant,descendent,�
 pay_title,Pay bill,Rechnung bezahlen,Rächnig zaale,Paga fattura,Payer la facture,Pagar il quint,Плати рачун,Оплатить счёт,請求書の支払い,支付账单,Clutch This Quest
 new_bill_title,New bill,Neue Rechnung,Neui Rächnig,Nuova fattura,Nouvelle facture,Nov quint,Нови рачун,Новый счёт,新しい請求書,新账单,New Quest
 edit_bill_title,Edit bill,Rechnung bearbeiten,Rächnig bearbeite,Modifica fattura,Modifier la facture,Modificar il quint,Измени рачун,Изменить счёт,請求書を編集,编辑账单,Edit Quest
-tpl_payee,Creditor template,Gläubiger-Vorlage,Gläubiger-Vorlag,Modello creditore,Modèle de créancier,Model da creditur,Шаблон повериоца,Шаблон кредитора,債権者テンプレート,债权人模板,Creditor Skin
-tpl_payer,Debtor template,Schuldner-Vorlage,Schuldner-Vorlag,Modello debitore,Modèle de débiteur,Model da debitur,Шаблон дужника,Шаблон должника,債務者テンプレート,债务人模板,Debtor Skin
+tpl_recipient,Recipient template,Empfänger-Vorlage,Empfänger-Vorlag,Modello beneficiario,Modèle de bénéficiaire,Model da retschavider,Шаблон примаоца,Шаблон получателя,受取人テンプレート,收款人模板,Recipient Skin
+tpl_payer,Payer template,Zahler-Vorlage,Zahler-Vorlag,Modello pagatore,Modèle de payeur,Model da pajader,Шаблон платиоца,Шаблон плательщика,支払人テンプレート,付款人模板,Payer Skin
 tpl_none,none,keine,kei,nessuno,aucun,nagin,ниједан,нет,なし,无,Default Skin
 hint_nav,Up/Down/Wheel: navigate · Enter: select · Esc: back,↑/↓/Rad: navigieren · Enter: wählen · Esc: zurück,↑/↓/Rad: navigiere · Enter: wähle · Esc: zrugg,↑/↓/Ruota: naviga · Enter: seleziona · Esc: indietro,↑/↓/Roulette: naviguer · Enter: sélectionner · Esc: retour,↑/↓/Roda: navigar · Enter: tscherner · Esc: enavos,↑/↓/Колутак: навигација · Ентер: изабери · Еск: назад,↑/↓/Колесо: навигация · Enter: выбор · Esc: назад,↑/↓/ホイール: ナビゲート · Enter: 選択 · Esc: 戻る,↑/↓/滚轮: 导航 · Enter: 选择 · Esc: 返回,WASD: Move · Enter: Interact · Esc: Bail
 hint_menu,Select a menu item,Menüpunkt wählen,Menüpunkt wähle,Seleziona una voce di menu,Sélectionnez un élément de menu,Tscherner in punct dal menu,Изаберите ставку менија,Выберите пункт меню,メニュー項目を選択,选择菜单项,Pick Your Loadout
@@ -83,13 +83,13 @@ confirm_delete_entry,Delete this entry?,Diesen Eintrag wirklich löschen?,De Ein
 msg_deleted,Bill deleted,Rechnung gelöscht,Rächnig glöscht,Fattura eliminata,Facture supprimée,Quint stizzà,Рачун обрисан,Счёт удалён,請求書を削除しました,账单已删除,Quest Eliminated
 entry_added,Entry added,Eintrag hinzugefügt,Eintrag derzue,Emissione aggiunta,Entrée ajoutée,Endataziun agiuntada,Унос додат,Запись добавлена,エントリを追加しました,条目已添加,Item Added to Locker
 entry_deleted,Entry deleted,Eintrag gelöscht,Eintrag glöscht,Voce eliminata,Entrée supprimée,Endataziun stizzada,Унос обрисан,Запись удалена,エントリを削除しました,条目已删除,Item Eliminated
-add_payee_title,Add creditor template,Gläubiger-Vorlage hinzufügen,Gläubiger-Vorlag derzue,Aggiungi modello creditore,Ajouter un modèle de créancier,Agiuntar model da creditur,Додај шаблон повериоца,Добавить шаблон кредитора,債権者テンプレートを追加,添加债权人模板,Add Creditor Skin
-add_payer_title,Add debtor template,Schuldner-Vorlage hinzufügen,Schuldner-Vorlag derzue,Aggiungi modello debitore,Ajouter un modèle de débiteur,Agiuntar model da debitur,Додај шаблон дужника,Добавить шаблон должника,債務者テンプレートを追加,添加债务人模板,Add Debtor Skin
-manage_payees,Creditor templates,Gläubiger-Vorlagen,Gläubiger-Vorlage,Modelli creditori,Modèles de créanciers,Models da creditur,Шаблони поверилаца,Шаблоны кредиторов,債権者テンプレート,债权人模板,Creditor Skins
-manage_payers,Debtor templates,Schuldner-Vorlagen,Schuldner-Vorlage,Modelli debitori,Modèles de débiteurs,Models da debitur,Шаблони дужника,Шаблоны должников,債務者テンプレート,债务人模板,Debtor Skins
+add_recipient_title,Add recipient template,Empfänger-Vorlage hinzufügen,Empfänger-Vorlag derzue,Aggiungi modello beneficiario,Ajouter un modèle de bénéficiaire,Agiuntar model da retschavider,Додај шаблон примаоца,Добавить шаблон получателя,受取人テンプレートを追加,添加收款人模板,Add Recipient Skin
+add_payer_title,Add payer template,Zahler-Vorlage hinzufügen,Zahler-Vorlag derzue,Aggiungi modello pagatore,Ajouter un modèle de payeur,Agiuntar model da pajader,Додај шаблон платиоца,Добавить шаблон плательщика,支払人テンプレートを追加,添加付款人模板,Add Payer Skin
+manage_recipients,Recipient templates,Empfänger-Vorlagen,Empfänger-Vorlage,Modelli beneficiari,Modèles de bénéficiaires,Models da retschavider,Шаблони прималаца,Шаблоны получателей,受取人テンプレート,收款人模板,Recipient Skins
+manage_payers,Payer templates,Zahler-Vorlagen,Zahler-Vorlage,Modelli pagatori,Modèles de payeurs,Models da pajader,Шаблони платилаца,Шаблоны плательщиков,支払人テンプレート,付款人模板,Payer Skins
 entries_count,{n} entries,{n} Einträge,{n} Einträg,{n} voci,{n} entrées,{n} endataziuns,{n} унос(а),{n} записей,{n}件のエントリ,{n}个条目,{n} Items in Locker
 splash_title,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ,BillHQ
-splash_tagline,"your bills, handled.","deine Rechnungen, erledigt.","dini Rächnige, erledigt.","le tue fatture, gestite.","vos factures, gérées.","tes quints, manegià.","ваши рачуни, сређени.","ваши счета, улажены.","請求書、管理完了。","你的账单，搞定。","your quests, clutched."
+splash_tagline,"your bills, handled.","deine Rechnungen, erledigt.","dini Rächnige, erledigt.","le tue fatture, gestite.","vos factures, gérées.","tes quints, manegià.","ваши рачуни, сређени.","ваши счета, улажены.",請求書、管理完了。,你的账单，搞定。,"your quests, clutched."
 bills_search_placeholder,Search bills...,Rechnungen suchen...,Rächnige sueche...,Cerca fatture...,Rechercher factures...,Tschertgar quints...,Претражи рачуне...,Поиск счетов...,請求書を検索...,搜索账单...,Search Quests...
 menu_scan_bill,Scan Bill,Rechnung scannen,Rächnig scanne,Scansiona fattura,Scanner une facture,Scannar il quint,Скенирај рачун,Сканировать счёт,請求書スキャン,扫描账单,Scan for Loot
 scan_bill_title,Scan Bill,Rechnung scannen,Rächnig scanne,Scansiona fattura,Scanner une facture,Scannar il quint,Скенирај рачун,Сканировать счёт,請求書スキャン,扫描账单,Scan for Loot

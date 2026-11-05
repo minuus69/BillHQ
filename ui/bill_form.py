@@ -53,13 +53,13 @@ class BillEditForm(Widget):
         self.w_reference = self._inp("reference", b.reference,
                                      placeholder="21 00000 00000 …")
         self.w_note = self._inp("note", b.note)
-        self.w_payee_name = self._inp("payee_name", b.payee_name)
-        self.w_payee_street = self._inp("payee_street", b.payee_street)
-        self.w_payee_building_nr = self._inp("payee_building_nr", b.payee_building_nr)
-        self.w_payee_postal_code = self._inp("payee_postal_code", b.payee_postal_code)
-        self.w_payee_city = self._inp("payee_city", b.payee_city)
+        self.w_recipient_name = self._inp("recipient_name", b.recipient_name)
+        self.w_recipient_street = self._inp("recipient_street", b.recipient_street)
+        self.w_recipient_building_nr = self._inp("recipient_building_nr", b.recipient_building_nr)
+        self.w_recipient_postal_code = self._inp("recipient_postal_code", b.recipient_postal_code)
+        self.w_recipient_city = self._inp("recipient_city", b.recipient_city)
 
-        self.w_payee_country = self._choice("payee_country", COUNTRIES, b.payee_country)
+        self.w_recipient_country = self._choice("recipient_country", COUNTRIES, b.recipient_country)
         self.w_payer_name = self._inp("payer_name", b.payer_name)
         self.w_payer_street = self._inp("payer_street", b.payer_street)
         self.w_payer_building_nr = self._inp("payer_building_nr", b.payer_building_nr)
@@ -67,7 +67,7 @@ class BillEditForm(Widget):
         self.w_payer_city = self._inp("payer_city", b.payer_city)
 
         self.w_payer_country = self._choice("payer_country", COUNTRIES, b.payer_country)
-        self.w_pnote = self._inp("private_note", b.private_note)
+        self.w_private_note = self._inp("private_note", b.private_note)
 
     def compose(self) -> ComposeResult:
         def cell(label_key: str, control: Widget) -> Vertical:
@@ -86,14 +86,14 @@ class BillEditForm(Widget):
                 yield cell("f_paid_date", self.w_paid_date)
                 yield cell("f_paid_with", self.w_paid_with)
                 yield Vertical(self.w_checked, classes="form-cell")
-            yield Label(f"── {tr('payee_section')} ──", classes="form-section")
+            yield Label(f"── {tr('recipient_section')} ──", classes="form-section")
             with Grid(classes="form-grid"):
-                yield cell("f_payee_name", self.w_payee_name)
-                yield cell("f_street", self.w_payee_street)
-                yield cell("f_building_nr", self.w_payee_building_nr)
-                yield cell("f_postal_code", self.w_payee_postal_code)
-                yield cell("f_city", self.w_payee_city)
-                yield cell("f_country", self.w_payee_country)
+                yield cell("f_recipient_name", self.w_recipient_name)
+                yield cell("f_street", self.w_recipient_street)
+                yield cell("f_building_nr", self.w_recipient_building_nr)
+                yield cell("f_postal_code", self.w_recipient_postal_code)
+                yield cell("f_city", self.w_recipient_city)
+                yield cell("f_country", self.w_recipient_country)
             yield Label(f"── {tr('payer_section')} ──", classes="form-section")
             with Grid(classes="form-grid"):
                 yield cell("f_payer_name", self.w_payer_name)
@@ -103,7 +103,7 @@ class BillEditForm(Widget):
                 yield cell("f_city", self.w_payer_city)
                 yield cell("f_country", self.w_payer_country)
             yield Label(f"── {tr('f_private_note')} ──", classes="form-section")
-            yield self.w_pnote
+            yield self.w_private_note
 
     # -- programmatic access -------------------------------------------------
     def set_value(self, field: str, value: str) -> None:
@@ -112,9 +112,9 @@ class BillEditForm(Widget):
         elif field == "currency":
             if value in CURRENCIES:
                 self.w_currency.value = value
-        elif field == "payee_country":
+        elif field == "recipient_country":
             if value in COUNTRIES:
-                self.w_payee_country.value = value
+                self.w_recipient_country.value = value
         elif field == "payer_country":
             if value in COUNTRIES:
                 self.w_payer_country.value = value
@@ -131,7 +131,7 @@ class BillEditForm(Widget):
         """Returns (bill, None) on success or (None, error_message)."""
         vals = {f: w.value.strip() for f, w in self.inputs.items()}
         vals["currency"] = select_text(self.w_currency)
-        vals["payee_country"] = select_text(self.w_payee_country)
+        vals["recipient_country"] = select_text(self.w_recipient_country)
         vals["payer_country"] = select_text(self.w_payer_country)
         vals["paid_checked"] = "True" if self.w_checked.value else "False"
 
