@@ -38,6 +38,19 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
+## Project layout
+```
+app.py            entry point
+appdata/          data layer: bills and CSV files, QR bills, translations, logging
+ui/               Textual app, the bill form, dialogs and styles.tcss
+ui/screens/       one module per area of the app
+userdata/         your bills, templates and settings (bills and templates are not in git)
+templates/        example CSV files
+tests/            pytest suite
+```
+
+In the code, **payee** is who gets the money ("Payable to" on a QR bill) and **payer** is who pays ("Payable by"). In the CSV files they're the `d*` and `c*` columns, stored in `debitorList.csv` and `creditorList.csv`.
+
 ## Usage
 | Key     | Action      |
 | ------- | ----------- |

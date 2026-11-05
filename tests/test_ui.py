@@ -113,7 +113,14 @@ def test_clearing_a_template_selection_is_safe(data_dir):
         template = app.screen.query_one("#tpl-payee", Select)
         template.value = 0
         await pilot.pause(0.2)
-        assert app.screen.form.w_description.value == "Steuerrechnung"
+        form = app.screen.form
+        assert form.w_description.value == "Steuerrechnung"
+        assert form.w_payee_name.value == "Finanzamt Zürich"
+        assert form.w_amount.value == "1250.00"
+        assert form.w_currency.value == "CHF"
+        app.screen.query_one("#tpl-payer", Select).value = 0
+        await pilot.pause(0.2)
+        assert form.w_payer_name.value == "Max Muster"
         template.clear()
         await pilot.pause(0.2)
     run(test)

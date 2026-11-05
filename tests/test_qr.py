@@ -1,5 +1,9 @@
 """QR bills: generating, reading back, and the optional fields."""
+import subprocess
+import sys
 from dataclasses import replace
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -84,3 +88,71 @@ def test_bad_bills_give_clear_errors(tmp_path, change, message):
 def test_non_swiss_payload_is_rejected():
     with pytest.raises(ValueError):
         qr.parse_swiss_qr_payload("https://example.com")
+
+
+PAYLOAD = "\n".join(["SPC", "0200", "1", "CH9300762011623852957", "S", "Firma", "", "", "8000",
+                     "Zürich", "CH", "", "", "", "", "", "", "", "12.50", "CHF", "", "", "", "",
+                     "", "", "", "NON", "", "", "EPD"])
+
+
+def fake_run(monkeypatch, returncode, stdout=""):
+    calls = []
+
+    def run(cmd, **kwargs):
+        calls.append((cmd, kwargs))
+        return SimpleNamespace(returncode=returncode, stdout=stdout, stderr="")
+
+    monkeypatch.setattr(qr.subprocess, "run", run)
+    return calls
+
+
+def test_webcam_scan_parses_found_payload(monkeypatch):
+    calls = fake_run(monkeypatch, 0, PAYLOAD)
+    assert qr.scan_qr_webcam()["payee_name"] == "Firma"
+    cmd, kwargs = calls[0]
+    assert cmd[1:] == ["-m", "appdata.qr_webcam"]
+    assert (Path(kwargs["cwd"]) / "appdata" / "qr_webcam.py").exists()
+
+
+def test_webcam_scan_cancelled(monkeypatch):
+    fake_run(monkeypatch, 1)
+    assert qr.scan_qr_webcam() is None
+
+
+def test_webcam_scan_no_camera(monkeypatch):
+    fake_run(monkeypatch, 2)
+    with pytest.raises(RuntimeError, match="camera"):
+        qr.scan_qr_webcam()
+
+
+def test_webcam_module_reports_missing_camera(monkeypatch):
+    """Without touching a real camera: every device fails to open, so it exits 2."""
+    from appdata import qr_webcam
+
+    class NoCamera:
+        def __init__(self, index):
+            pass
+
+        def isOpened(self):
+            return False
+
+        def release(self):
+            pass
+
+    monkeypatch.setattr(qr_webcam.cv2, "VideoCapture", NoCamera)
+    with pytest.raises(SystemExit) as exit_info:
+        qr_webcam.main()
+    assert exit_info.value.code == 2
+
+
+def test_webcam_module_loads_as_its_own_process():
+    root = Path(qr.__file__).resolve().parent.parent
+    subprocess.run([sys.executable, "-c", "import appdata.qr_webcam"], cwd=root, check=True)
+
+
+def test_webcam_detector_finds_a_generated_bill(tmp_path):
+    import cv2
+    from appdata import qr_webcam
+    png = qr.generate_qr_bill(BILL, Settings(), tmp_path, open_viewer=False)
+    found = qr_webcam.try_detect(cv2.imread(str(png)), cv2.QRCodeDetector())
+    assert found.startswith("SPC")
