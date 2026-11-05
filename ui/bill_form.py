@@ -15,17 +15,16 @@ from ui.helpers import select_text
 
 
 class BillEditForm(Widget):
-    def __init__(self, bill: Bill, settings: Settings, prefix: str):
+    def __init__(self, bill: Bill, settings: Settings):
         super().__init__()
         self.bill = bill
         self.settings = settings
-        self.prefix = prefix
         self.inputs: dict[str, Input] = {}
         self._build()
 
     # -- construction -------------------------------------------------------
     def _inp(self, field: str, value: str, placeholder: str = "") -> Input:
-        widget = Input(value=value or "", placeholder=placeholder, id=f"{self.prefix}-{field}")
+        widget = Input(value=value or "", placeholder=placeholder, id=f"form-{field}")
         self.inputs[field] = widget
         return widget
 
@@ -35,7 +34,7 @@ class BillEditForm(Widget):
         choices = options if not value or value in options else [*options, value]
         preset = {"value": value} if value else {}
         return Select([(c, c) for c in choices], allow_blank=True, prompt="–",
-                      id=f"{self.prefix}-{field}", **preset)
+                      id=f"form-{field}", **preset)
 
     def _build(self) -> None:
         b, fmt = self.bill, self.settings.date_format
@@ -45,7 +44,7 @@ class BillEditForm(Widget):
         self.w_paid_with = self._inp("paidWith", b.paidWith,
                                      placeholder="ZKB / TWINT / Post …")
         self.w_checked = Checkbox(tr("f_paid_checked"), value=b.is_checked,
-                                  id=f"{self.prefix}-paidChecked")
+                                  id="form-paidChecked")
         self.w_amount = self._inp("bAmount", b.bAmount, placeholder="0.00")
 
         self.w_currency = self._choice("bCurrency", CURRENCIES, b.bCurrency)

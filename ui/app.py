@@ -9,7 +9,7 @@ from textual.binding import Binding
 from appdata.core import Core
 from appdata.languages import tr
 from ui.screens.main_menu import MainMenuScreen
-from ui.screens.menus import SplashScreen
+from ui.screens.splash import SplashScreen
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

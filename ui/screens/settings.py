@@ -2,22 +2,18 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
-from textual.screen import Screen
 from textual.widget import Widget
 from textual.widgets import Header, Input, Select, Static
 
-from appdata.core import Core
-from appdata.csvparser import COUNTRIES, CURRENCIES, DATE_FORMATS, Settings
+from appdata.csvparser import COUNTRIES, CURRENCIES, DATE_FORMATS
 from appdata.languages import LANG_CODES, LANG_NAMES, set_language, tr
+from ui.screens.base import BackScreen
 
 
-class SettingsScreen(Screen):
-    BINDINGS = [Binding("escape", "back", "Back")]
-
+class SettingsScreen(BackScreen):
     def compose(self) -> ComposeResult:
-        s: Settings = self.app.core.settings
+        s = self.core.settings
         yield Header()
         with VerticalScroll(id="settings-scroll"):
             yield Static(tr("menu_settings"), classes="screen-title")
@@ -66,7 +62,7 @@ class SettingsScreen(Screen):
         if key is None or not isinstance(event.value, str):
             return
 
-        core: Core = self.app.core
+        core = self.core
 
         if getattr(core.settings, key) == event.value:   # fired while mounting
             return
@@ -89,12 +85,9 @@ class SettingsScreen(Screen):
         except ValueError:
             self.notify(f"{tr('set_logsize')}: 100 … 1000000", severity="error")
             return
-        core: Core = self.app.core
+        core = self.core
         core.settings.logsize = n
         core.save_settings_file()
         core.logger.set_max_lines(n)
         core.logger.info(f"settings: logsize = {n}")
         self.notify(tr("msg_settings_saved"))
-
-    def action_back(self) -> None:
-        self.app.pop_screen()

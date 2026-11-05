@@ -31,12 +31,8 @@ class PayModal(ModalScreen):
                         id="pay-with")
             yield Checkbox(tr("f_paid_checked"), value=self.bill.is_checked, id="pay-checked")
             with Horizontal(classes="dlg-buttons"):
-                ok = Button(tr("btn_ok"), variant="success", classes="b-ok")
-                cancel = Button(tr("btn_cancel"), classes="b-cancel")
-                ok.kind = "ok"                # type: ignore[attr-defined]
-                cancel.kind = "cancel"        # type: ignore[attr-defined]
-                yield ok
-                yield cancel
+                yield Button(tr("btn_ok"), variant="success", id="pay-ok")
+                yield Button(tr("btn_cancel"), id="pay-cancel")
 
     def on_mount(self) -> None:
         self.query_one("#pay-date", Input).focus()
@@ -60,10 +56,9 @@ class PayModal(ModalScreen):
         self.dismiss(None)
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
-        kind = getattr(event.button, "kind", None)
-        if kind == "cancel":
+        if event.button.id == "pay-cancel":
             self.dismiss(None)
-        elif kind == "ok":
+        elif event.button.id == "pay-ok":
             await self._ok()
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
@@ -82,16 +77,11 @@ class ConfirmDeleteModal(ModalScreen):
             yield Static(tr("confirm_delete_title"), classes="dlg-title")
             yield Static(self.message, classes="dlg-msg")
             with Horizontal(classes="dlg-buttons"):
-                yes = Button(tr("btn_yes"), variant="error", classes="b-yes")
-                no = Button(tr("btn_no"), variant="default", classes="b-no")
-                yes.kind = "yes"
-                no.kind = "no"
-                yield yes
-                yield no
+                yield Button(tr("btn_yes"), variant="error", id="confirm-yes")
+                yield Button(tr("btn_no"), variant="default", id="confirm-no")
 
     def action_cancel(self) -> None:
         self.dismiss(False)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        kind = getattr(event.button, "kind", None)
-        self.dismiss(kind == "yes")
+        self.dismiss(event.button.id == "confirm-yes")

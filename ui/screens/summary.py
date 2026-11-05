@@ -8,22 +8,18 @@ from decimal import Decimal
 from rich.table import Table
 from rich.text import Text
 from textual.app import ComposeResult
-from textual.binding import Binding
 from textual.containers import VerticalScroll
-from textual.screen import Screen
 from textual.widgets import Header, Static
 
-from appdata.core import Core
 from appdata.csvparser import Bill, amount_decimal, format_date
 from appdata.languages import tr
 from ui.helpers import format_amount
+from ui.screens.base import BackScreen
 
 
-class SummaryScreen(Screen):
-    BINDINGS = [Binding("escape", "back", "Back")]
-
+class SummaryScreen(BackScreen):
     def compose(self) -> ComposeResult:
-        core: Core = self.app.core
+        core = self.core
         fmt = core.settings.date_format
         today = date.today()
         open_bills = [b for b in core.bills if not b.is_paid]
@@ -102,6 +98,3 @@ class SummaryScreen(Screen):
             t.add_row(Text(format_date(b.dueDate, fmt), style=style), b.description or "–",
                           f"{format_amount(amount_decimal(b.bAmount))} {b.bCurrency}")
         return Static(t, classes="summary-block")
-
-    def action_back(self) -> None:
-        self.app.pop_screen()

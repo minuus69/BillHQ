@@ -1,23 +1,19 @@
 """The bill list with expandable rows, and editing a bill."""
 from __future__ import annotations
 
-from uuid import uuid4
-
 from rich.table import Table
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
-from textual.screen import Screen
 from textual.widgets import Button, Checkbox, Header, Input, Select, Static, TextArea
 
 from appdata import qr
-from appdata.core import Core
 from appdata.csvparser import DATA_FIELDS, Bill, Settings, amount_decimal, bill_state, format_date
 from appdata.languages import tr
-from ui.bill_form import BillEditForm
 from ui.dialogs import ConfirmDeleteModal, PayModal
 from ui.helpers import detail_text, format_amount
+from ui.screens.base import BackScreen, BillFormScreen
 
 
 class RowHead(Static):
@@ -52,6 +48,13 @@ class RowHead(Static):
         self._row.screen_ref.row_clicked(self._row.index)
 
 
+class RowButton(Button):
+    def __init__(self, label: str, row: "BillRow", command: str, variant: str):
+        super().__init__(label, variant=variant)
+        self.row = row
+        self.command = command
+
+
 class BillRow(Vertical):
     def __init__(self, screen: "BillsScreen", index: int, bill: Bill, settings: Settings):
         super().__init__()
@@ -69,12 +72,6 @@ class BillRow(Vertical):
     def on_mount(self) -> None:
         self.query_one(".row-detail").display = False
 
-    def _button(self, label: str, kind: str, variant: str) -> Button:
-        btn = Button(label, variant=variant, classes=f"b-{kind}")
-        btn.row = self
-        btn.kind = kind
-        return btn
-
     def expand(self) -> None:
         self._expanded = True
         self.add_class("expanded")
@@ -89,10 +86,10 @@ class BillRow(Vertical):
             TextArea(detail_text(self.bill, self.settings),
                      read_only=True, classes="detail-view"),
             Horizontal(
-                self._button(tr("btn_show_qr"), "qr", "primary"),
-                self._button(tr("btn_pay"), "pay", "success"),
-                self._button(tr("btn_edit"), "edit", "warning"),
-                self._button(tr("btn_delete"), "delete", "error"),
+                RowButton(tr("btn_show_qr"), self, "qr", "primary"),
+                RowButton(tr("btn_pay"), self, "pay", "success"),
+                RowButton(tr("btn_edit"), self, "edit", "warning"),
+                RowButton(tr("btn_delete"), self, "delete", "error"),
                 classes="row-buttons view-buttons",
             ),
         )
@@ -109,12 +106,11 @@ class BillRow(Vertical):
         return self._expanded
 
 
-class BillsScreen(Screen):
+class BillsScreen(BackScreen):
     BINDINGS = [
         Binding("up", "nav_up", "Up"),
         Binding("down", "nav_down", "Down"),
         Binding("enter", "select", "Select"),
-        Binding("escape", "back", "Back"),
         Binding("delete", "delete_bill", "Delete"),
     ]
 
@@ -125,20 +121,15 @@ class BillsScreen(Screen):
         self._search_query = ""
         self._search_timer = None
 
-    @property
-    def core(self) -> Core:
-        return self.app.core
-
     def compose(self) -> ComposeResult:
         yield Header()
         yield Input(placeholder=tr("bills_search_placeholder"), id="bills-search")
         yield VerticalScroll(id="bill-list")
         yield Static(tr("hint_nav"), id="footer-hint")
 
-    async def on_mount(self) -> None:
+    def on_mount(self) -> None:
         # Tab should land on the rows' buttons; the list itself would swallow arrow keys
         self.query_one("#bill-list", VerticalScroll).can_focus = False
-        await self.rebuild()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "bills-search":
@@ -251,18 +242,17 @@ class BillsScreen(Screen):
         self._highlight()
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
-        row: BillRow | None = getattr(event.button, "row", None)
-        kind: str | None = getattr(event.button, "kind", None)
-        if row is None or kind is None:
+        button = event.button
+        if not isinstance(button, RowButton):
             return
-        if kind == "qr":
-            self._show_qr(row)
-        elif kind == "pay":
-            self._pay(row)
-        elif kind == "edit":
-            self._edit(row)
-        elif kind == "delete":
-            self._confirm_delete(row)
+        if button.command == "qr":
+            self._show_qr(button.row)
+        elif button.command == "pay":
+            self._pay(button.row)
+        elif button.command == "edit":
+            self.app.push_screen(EditBillScreen(button.row.bill))
+        elif button.command == "delete":
+            self._confirm_delete(button.row)
         self.app.set_focus(None)
 
     def _show_qr(self, row: BillRow) -> None:
@@ -287,13 +277,6 @@ class BillsScreen(Screen):
             await self.rebuild()
         self.app.push_screen(PayModal(row.bill, self.core.settings, confirm))
 
-    def _edit(self, row: BillRow) -> None:
-        try:
-            real_index = self.core.bills.index(row.bill)
-        except ValueError:
-            real_index = row.index
-        self.app.push_screen(EditBillScreen(row.bill, real_index))
-
     def _confirm_delete(self, row: BillRow) -> None:
         async def on_confirm(result: bool) -> None:
             if result:
@@ -311,43 +294,16 @@ class BillsScreen(Screen):
         await self.rebuild()
 
 
-class EditBillScreen(Screen):
-    BINDINGS = [Binding("escape", "back", "Back")]
+class EditBillScreen(BillFormScreen):
+    title_key = "edit_bill_title"
 
-    def __init__(self, bill: Bill, index: int):
+    def __init__(self, bill: Bill):
         super().__init__()
         self.bill = bill
-        self.bill_index = index
 
-    def compose(self) -> ComposeResult:
-        core: Core = self.app.core
-        self.form = BillEditForm(self.bill, core.settings, f"edit{uuid4().hex[:6]}")
-        yield Header()
-        with VerticalScroll(id="newbill-scroll"):
-            yield Static(tr("edit_bill_title"), classes="screen-title")
-            yield self.form
-            with Horizontal(classes="newbill-buttons"):
-                yield Button(tr("btn_save"), variant="success", id="btn-edit-save")
-                yield Button(tr("btn_cancel"), id="btn-edit-cancel")
-        yield Static(tr("hint_nav"), id="footer-hint")
+    def initial_bill(self) -> Bill:
+        return self.bill
 
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn-edit-cancel":
-            self.app.pop_screen()
-        elif event.button.id == "btn-edit-save":
-            core: Core = self.app.core
-            bill, err = self.form.collect()
-            if err:
-                core.logger.warning(f"bill edit rejected: {err}")
-                self.notify(err, severity="error", timeout=10)
-                return
-            # Update the existing bill in-place
-            for f in DATA_FIELDS:
-                setattr(core.bills[self.bill_index], f, getattr(bill, f))
-            core.persist()
-            core.logger.info(f"bill edited: {bill.description!r}")
-            self.notify(tr("msg_bill_saved"))
-            self.app.pop_screen()
-
-    def action_back(self) -> None:
-        self.app.pop_screen()
+    def apply(self, bill: Bill) -> None:
+        for field in DATA_FIELDS:
+            setattr(self.bill, field, getattr(bill, field))

@@ -1,18 +1,12 @@
-"""Reusable menu parts, the splash screen and the main menu."""
+"""The splash screen shown at startup."""
 from __future__ import annotations
 
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Label, ListItem, Static
+from textual.widgets import Static
 
 from appdata.languages import tr
-
-
-class MenuItem(ListItem):
-    def __init__(self, label: str, menu_key: str):
-        super().__init__(Label(label))
-        self.menu_key = menu_key
 
 
 class SplashScreen(ModalScreen):

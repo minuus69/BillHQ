@@ -1,49 +1,42 @@
 """Creating a bill, optionally starting from templates."""
 from __future__ import annotations
 
-from uuid import uuid4
-
 from textual.app import ComposeResult
-from textual.binding import Binding
-from textual.containers import Horizontal, Vertical, VerticalScroll
-from textual.screen import Screen
-from textual.widgets import Button, Header, Label, Select, Static
+from textual.containers import Horizontal, Vertical
+from textual.widgets import Label, Select
 
-from appdata.core import Core
 from appdata.csvparser import CREDITOR_FIELDS, Bill
 from appdata.languages import tr
-from ui.bill_form import BillEditForm
+from ui.screens.base import BillFormScreen
 from ui.screens.bills import BillsScreen
 
+DEBITOR_TEMPLATE_TO_BILL = {
+    "description": "description", "bAmount": "amount", "bCurrency": "currency",
+    "bAccount": "account", "dName": "dName", "dStreet": "dStreet",
+    "dBuildingNr": "dBuildingNr", "dPostalCode": "dPostalCode", "dCity": "dCity",
+    "dCountry": "dCountry",
+}
+CREDITOR_TEMPLATE_TO_BILL = {f: f for f in CREDITOR_FIELDS}
 
-class NewBillScreen(Screen):
-    BINDINGS = [Binding("escape", "back", "Back")]
 
-    def compose(self) -> ComposeResult:
-        core: Core = self.app.core
-        blank = Bill(
-            bCurrency=core.settings.default_currency,
-            dCountry=core.settings.default_country,
-            cCountry=core.settings.default_country,
-        )
-        self.form = BillEditForm(blank, core.settings, f"new{uuid4().hex[:6]}")
-        yield Header()
-        with VerticalScroll(id="newbill-scroll"):
-            yield Static(tr("new_bill_title"), classes="screen-title")
-            with Horizontal(classes="tpl-row"):
-                with Vertical(classes="tpl-cell"):
-                    yield Label(tr("tpl_debtor"))
-                    yield Select(self._options(core.debitors, debtor=True), allow_blank=True,
-                                 prompt=tr("tpl_none"), id="tpl-debtor")
-                with Vertical(classes="tpl-cell"):
-                    yield Label(tr("tpl_creditor"))
-                    yield Select(self._options(core.creditors, debtor=False), allow_blank=True,
-                                 prompt=tr("tpl_none"), id="tpl-creditor")
-            yield self.form
-            with Horizontal(classes="newbill-buttons"):
-                yield Button(tr("btn_save"), variant="success", id="btn-new-save")
-                yield Button(tr("btn_cancel"), id="btn-new-cancel")
-        yield Static(tr("hint_nav"), id="footer-hint")
+class NewBillScreen(BillFormScreen):
+    title_key = "new_bill_title"
+
+    def initial_bill(self) -> Bill:
+        settings = self.core.settings
+        return Bill(bCurrency=settings.default_currency, dCountry=settings.default_country,
+                    cCountry=settings.default_country)
+
+    def compose_above_form(self) -> ComposeResult:
+        with Horizontal(classes="tpl-row"):
+            with Vertical(classes="tpl-cell"):
+                yield Label(tr("tpl_debtor"))
+                yield Select(self._options(self.core.debitors, debtor=True), allow_blank=True,
+                             prompt=tr("tpl_none"), id="tpl-debtor")
+            with Vertical(classes="tpl-cell"):
+                yield Label(tr("tpl_creditor"))
+                yield Select(self._options(self.core.creditors, debtor=False), allow_blank=True,
+                             prompt=tr("tpl_none"), id="tpl-creditor")
 
     @staticmethod
     def _options(rows: list[dict], debtor: bool) -> list[tuple[str, int]]:
@@ -60,40 +53,22 @@ class NewBillScreen(Screen):
     def on_select_changed(self, event: Select.Changed) -> None:
         if not isinstance(event.value, int):      # dropdown cleared
             return
-        core: Core = self.app.core
-        if event.select.id == "tpl-debtor" and event.value < len(core.debitors):
-            tpl = core.debitors[event.value]
-            mapping = {"description": "description", "bAmount": "amount",
-                       "bCurrency": "currency", "bAccount": "account",
-                       "dName": "dName", "dStreet": "dStreet",
-                       "dBuildingNr": "dBuildingNr", "dPostalCode": "dPostalCode",
-                       "dCity": "dCity", "dCountry": "dCountry"}
-        elif event.select.id == "tpl-creditor" and event.value < len(core.creditors):
-            tpl = core.creditors[event.value]
-            mapping = {f: f for f in CREDITOR_FIELDS}
+        if event.select.id == "tpl-debtor":
+            template, mapping = self.core.debitors[event.value], DEBITOR_TEMPLATE_TO_BILL
+        elif event.select.id == "tpl-creditor":
+            template, mapping = self.core.creditors[event.value], CREDITOR_TEMPLATE_TO_BILL
         else:
             return
         for target, source in mapping.items():
-            value = (tpl.get(source) or "").strip()
+            value = (template.get(source) or "").strip()
             if value:
                 self.form.set_value(target, value)
-        core.logger.info(f"template applied ({event.select.id})")
+        self.core.logger.info(f"template applied ({event.select.id})")
 
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn-new-cancel":
-            self.app.pop_screen()
-        elif event.button.id == "btn-new-save":
-            core: Core = self.app.core
-            bill, err = self.form.collect()
-            if err:
-                core.logger.warning(f"new bill rejected: {err}")
-                self.notify(err, severity="error", timeout=10)
-                return
-            core.bills.append(bill)
-            core.persist()
-            core.logger.info(f"new bill saved: {bill.description!r}")
-            self.notify(tr("msg_bill_saved"))
-            await self.app.switch_screen(BillsScreen())
+    def apply(self, bill: Bill) -> None:
+        self.core.bills.append(bill)
 
-    def action_back(self) -> None:
-        self.app.pop_screen()
+    def leave(self) -> None:
+        # Don't await this: it waits for this screen to close, which can't happen
+        # while this screen is still busy handling the save, and the app freezes.
+        self.app.switch_screen(BillsScreen())

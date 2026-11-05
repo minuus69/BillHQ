@@ -2,19 +2,24 @@
 import asyncio
 
 import pytest
-from textual.widgets import Input, Select
+from textual.widgets import Button, Input, Select
 
 from ui import app as bill_app
-from ui.screens.bills import BillRow, BillsScreen, EditBillScreen
+from ui.dialogs import ConfirmDeleteModal, PayModal
+from ui.screens.bills import BillRow, BillsScreen, EditBillScreen, RowButton
 from ui.screens.main_menu import MainMenuScreen
-from ui.screens.menus import SplashScreen
+from ui.screens.splash import SplashScreen
 from ui.screens.new_bill import NewBillScreen
 from ui.screens.scan import ScanBillScreen
 from ui.screens.settings import SettingsScreen
 from ui.screens.summary import SummaryScreen
-from ui.screens.templates import AddCreditorScreen, ManageListScreen, ManageScreen
+from ui.screens.scan import ScanEditScreen
+from ui.screens.templates import (
+    AddCreditorScreen, AddDebitorScreen, ManageEntryItem, ManageListScreen, ManageScreen,
+)
 from appdata.csvparser import (
-    CREDITOR_FIELDS, Bill, load_settings, read_rows, save_bills, write_rows,
+    CREDITOR_FIELDS, DEBITOR_FIELDS, Bill, load_bills, load_settings, read_rows, save_bills,
+    write_rows,
 )
 from appdata.languages import set_language
 
@@ -118,8 +123,8 @@ def test_untouched_dropdown_saves_as_empty(data_dir):
     async def test(app, pilot):
         app.push_screen(AddCreditorScreen())
         await pilot.pause(0.2)
-        app.screen.query_one("#cred-cname", Input).value = "Test"
-        app.screen.query_one("#btn-cred-save").press()
+        app.screen.query_one("#template-cName", Input).value = "Test"
+        app.screen.query_one("#btn-template-save").press()
         await pilot.pause(0.3)
     run(test)
     rows = read_rows(data_dir / "userdata" / "creditorList.csv", CREDITOR_FIELDS)
@@ -138,7 +143,7 @@ def test_editing_keeps_unusual_and_empty_values(data_dir):
                 dName="n", dPostalCode="1", dCity="c", dCountry="EE", cCountry="")
 
     async def test(app, pilot):
-        app.push_screen(EditBillScreen(bill, 0))
+        app.push_screen(EditBillScreen(bill))
         await pilot.pause(0.2)
         saved, error = app.screen.form.collect()
         assert error is None
@@ -215,4 +220,246 @@ def test_language_switch_returns_to_translated_menu(data_dir):
         await pilot.pause(0.5)
         assert isinstance(app.screen, MainMenuScreen)
         assert app.title == "Rechnungsverwaltung"
+        await pilot.press("enter")    # the app must still respond after switching
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, BillsScreen)
     run(test)
+
+
+MENU_ROUTES = [(0, BillsScreen), (1, NewBillScreen), (2, ScanBillScreen),
+               (3, SummaryScreen), (4, ManageScreen), (5, SettingsScreen)]
+
+
+@pytest.mark.parametrize("position, screen", MENU_ROUTES)
+def test_main_menu_opens_screens_with_keyboard(data_dir, position, screen):
+    async def test(app, pilot):
+        for _ in range(position):
+            await pilot.press("down")
+        await pilot.press("enter")
+        await pilot.pause(0.3)
+        assert type(app.screen) is screen
+        await pilot.press("tab")
+        app.set_focus(None)
+        await pilot.press("escape")
+        await pilot.pause(0.2)
+        assert isinstance(app.screen, MainMenuScreen)
+    run(test)
+
+
+def seed(data_dir, *descriptions):
+    save_bills(data_dir / "userdata" / "data.csv", [
+        Bill(description=d, dueDate="2030-01-01", bAmount="1.00", bCurrency="CHF", bAccount="a",
+             dName="n", dPostalCode="1", dCity="c", dCountry="CH")
+        for d in descriptions])
+
+
+async def open_first_row(app, pilot):
+    app.push_screen(BillsScreen())
+    await pilot.pause(0.3)
+    app.screen.row_clicked(0)
+    await pilot.pause(0.3)
+    return app.screen
+
+
+def row_button(screen, command):
+    return next(b for b in screen.query(RowButton) if b.command == command)
+
+
+def test_row_pay_button_opens_dialog_and_saves(data_dir):
+    seed(data_dir, "a")
+
+    async def test(app, pilot):
+        screen = await open_first_row(app, pilot)
+        row_button(screen, "pay").press()
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, PayModal)
+        app.screen.query_one("#pay-ok", Button).press()
+        await pilot.pause(0.5)
+        assert app.screen is screen
+    run(test)
+    assert load_bills(data_dir / "userdata" / "data.csv")[0].is_paid
+
+
+def test_row_pay_cancel_changes_nothing(data_dir):
+    seed(data_dir, "a")
+
+    async def test(app, pilot):
+        screen = await open_first_row(app, pilot)
+        row_button(screen, "pay").press()
+        await pilot.pause(0.3)
+        app.screen.query_one("#pay-cancel", Button).press()
+        await pilot.pause(0.3)
+        assert app.screen is screen
+    run(test)
+    assert not load_bills(data_dir / "userdata" / "data.csv")[0].is_paid
+
+
+def test_row_delete_button_needs_confirmation(data_dir):
+    seed(data_dir, "a", "b")
+
+    async def test(app, pilot):
+        screen = await open_first_row(app, pilot)
+        row_button(screen, "delete").press()
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, ConfirmDeleteModal)
+        app.screen.query_one("#confirm-no", Button).press()
+        await pilot.pause(0.3)
+        assert len(app.core.bills) == 2
+        screen.row_clicked(0)         # the list rebuilds after a dialog, so reopen the row
+        await pilot.pause(0.3)
+        row_button(screen, "delete").press()
+        await pilot.pause(0.3)
+        app.screen.query_one("#confirm-yes", Button).press()
+        await pilot.pause(0.5)
+        assert len(screen.rows) == 1
+    run(test)
+    assert len(load_bills(data_dir / "userdata" / "data.csv")) == 1
+
+
+def test_row_edit_button_saves_the_right_bill(data_dir):
+    seed(data_dir, "a", "b")
+
+    async def test(app, pilot):
+        screen = await open_first_row(app, pilot)
+        target = screen.rows[0].bill.description
+        row_button(screen, "edit").press()
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, EditBillScreen)
+        app.screen.form.w_description.value = target + " edited"
+        app.screen.query_one("#btn-form-save", Button).press()
+        await pilot.pause(0.5)
+        assert app.screen is screen
+        assert any(r.bill.description == target + " edited" for r in screen.rows)
+    run(test)
+    names = [b.description for b in load_bills(data_dir / "userdata" / "data.csv")]
+    assert sorted(names) == ["a edited", "b"]
+
+
+def test_row_qr_button_reports_a_failure(data_dir):
+    seed(data_dir, "a")           # account "a" isn't a valid IBAN
+
+    async def test(app, pilot):
+        screen = await open_first_row(app, pilot)
+        row_button(screen, "qr").press()
+        await pilot.pause(0.3)
+        assert app.screen is screen
+    run(test)
+    assert not (data_dir / "userdata" / "qrbill.png").exists()
+
+
+def fill_required(form):
+    form.w_description.value = "Neu"
+    form.w_amount.value = "12,50"
+    form.w_account.value = "CH93 0076 2011 6238 5295 7"
+    form.w_dname.value = "Firma"
+    form.w_dpc.value = "8000"
+    form.w_dcity.value = "Zürich"
+
+
+def test_new_bill_saves_and_goes_to_list(data_dir):
+    seed(data_dir)
+
+    async def test(app, pilot):
+        app.push_screen(NewBillScreen())
+        await pilot.pause(0.3)
+        fill_required(app.screen.form)
+        app.screen.query_one("#btn-form-save", Button).press()
+        await pilot.pause(0.5)
+        assert isinstance(app.screen, BillsScreen)
+        app.set_focus(None)
+        await pilot.press("escape")   # the app must still respond after saving
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, MainMenuScreen)
+    run(test)
+    bill = load_bills(data_dir / "userdata" / "data.csv")[0]
+    assert (bill.description, bill.bAmount, bill.bReference) == ("Neu", "12.50", "")
+
+
+def test_new_bill_with_bad_amount_stays_on_form(data_dir):
+    seed(data_dir)
+
+    async def test(app, pilot):
+        app.push_screen(NewBillScreen())
+        await pilot.pause(0.3)
+        fill_required(app.screen.form)
+        app.screen.form.w_amount.value = "1,250"
+        app.screen.query_one("#btn-form-save", Button).press()
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, NewBillScreen)
+    run(test)
+    assert load_bills(data_dir / "userdata" / "data.csv") == []
+
+
+def test_saving_a_scanned_bill_returns_past_scan_menu(data_dir):
+    seed(data_dir)
+
+    async def test(app, pilot):
+        app.push_screen(ScanBillScreen())
+        await pilot.pause(0.2)
+        app.screen._open_form({"description": "Scan", "bAmount": "5.00", "bCurrency": "CHF",
+                               "bAccount": "a", "dName": "n", "dPostalCode": "1", "dCity": "c",
+                               "dCountry": "CH"})
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, ScanEditScreen)
+        app.screen.query_one("#btn-form-save", Button).press()
+        await pilot.pause(0.5)
+        assert isinstance(app.screen, MainMenuScreen)
+        await pilot.press("enter")    # the app must still respond after saving
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, BillsScreen)
+    run(test)
+    assert load_bills(data_dir / "userdata" / "data.csv")[0].description == "Scan"
+
+
+def test_debitor_template_add_validates_amount(data_dir):
+    async def test(app, pilot):
+        app.push_screen(AddDebitorScreen())
+        await pilot.pause(0.2)
+        app.screen.query_one("#template-dName", Input).value = "Firma"
+        app.screen.query_one("#template-amount", Input).value = "1,250"
+        app.screen.query_one("#btn-template-save", Button).press()
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, AddDebitorScreen)
+        app.screen.query_one("#template-amount", Input).value = "12,50"
+        app.screen.query_one("#btn-template-save", Button).press()
+        await pilot.pause(0.3)
+        assert not isinstance(app.screen, AddDebitorScreen)
+    run(test)
+    rows = read_rows(data_dir / "userdata" / "debitorList.csv", DEBITOR_FIELDS)
+    assert (rows[-1]["dName"], rows[-1]["amount"]) == ("Firma", "12.50")
+
+
+def test_template_without_name_is_rejected(data_dir):
+    async def test(app, pilot):
+        app.push_screen(AddCreditorScreen())
+        await pilot.pause(0.2)
+        app.screen.query_one("#btn-template-save", Button).press()
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, AddCreditorScreen)
+    run(test)
+
+
+def test_manage_list_add_and_delete_with_buttons(data_dir):
+    async def test(app, pilot):
+        app.push_screen(ManageListScreen("creditor"))
+        await pilot.pause(0.3)
+        screen = app.screen
+        before = len(screen.entries)
+        screen.query_one("#btn-manage-add", Button).press()
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, AddCreditorScreen)
+        app.screen.query_one("#template-cName", Input).value = "Neu"
+        app.screen.query_one("#btn-template-save", Button).press()
+        await pilot.pause(0.5)
+        assert app.screen is screen
+        assert len(screen.query(ManageEntryItem)) == before + 1
+        screen.select_entry(before)
+        screen.query_one("#btn-manage-delete", Button).press()
+        await pilot.pause(0.3)
+        app.screen.query_one("#confirm-yes", Button).press()
+        await pilot.pause(0.5)
+        assert len(screen.query(ManageEntryItem)) == before
+    run(test)
+    names = [r["cName"] for r in read_rows(data_dir / "userdata" / "creditorList.csv",
+                                           CREDITOR_FIELDS)]
+    assert "Neu" not in names

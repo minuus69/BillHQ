@@ -5,7 +5,7 @@ from pathlib import Path
 
 from appdata.csvparser import (
     CREDITOR_FIELDS, DEBITOR_FIELDS, Bill, bootstrap_files, load_bills, load_settings,
-    read_rows, save_bills, save_settings, sort_bills,
+    read_rows, save_bills, save_settings, sort_bills, write_rows,
 )
 from appdata.languages import set_language
 from appdata.logger import Logger
@@ -50,6 +50,15 @@ class Core:
         save_bills(self.userdata / "data.csv", self.bills)
         self._version += 1
         self.logger.info(f"data.csv saved ({len(self.bills)} bills)")
+
+    def templates(self, kind: str) -> list[dict]:
+        return self.debitors if kind == "debitor" else self.creditors
+
+    def save_templates(self, kind: str) -> None:
+        name, fields = (("debitorList.csv", DEBITOR_FIELDS) if kind == "debitor"
+                        else ("creditorList.csv", CREDITOR_FIELDS))
+        write_rows(self.userdata / name, fields, self.templates(kind))
+        self.logger.info(f"{kind} templates saved ({len(self.templates(kind))} entries)")
 
     def save_settings_file(self) -> None:
         save_settings(self.userdata / "settings.toml", self.settings)
