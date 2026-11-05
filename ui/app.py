@@ -16,7 +16,6 @@ from ui.screens.splash import SplashScreen
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = BASE_DIR / "templates"
-LEGACY_DIR = BASE_DIR / "userdata"       # where older versions kept everything
 
 
 class BillApp(App):
@@ -25,7 +24,7 @@ class BillApp(App):
 
     def __init__(self) -> None:
         super().__init__()
-        self.core = Core(TEMPLATES_DIR, paths.config_dir(), LEGACY_DIR)
+        self.core = Core(TEMPLATES_DIR, paths.config_dir())
 
     def on_mount(self) -> None:
         self.title = tr("app_title")

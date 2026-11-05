@@ -44,9 +44,9 @@ pytest
 | Bills and templates | `~/Documents/BillHQ/` | Change it under Settings, "Data folder". It can be anywhere. |
 | Settings and log | `~/.config/BillHQ/` | Only your user account can open this folder. It also remembers the data folder. |
 
-If the data folder is missing or empty, BillHQ creates it and copies in the sample files from `templates/`. A folder with anything in it is left as it is. Changing the folder doesn't move your files: the old folder stays untouched, so copy your CSV files over first if you want to keep using them.
+BillHQ never creates or copies anything in the data folder on its own. When you create or open bills and files are missing from it, it asks whether to create them there from `templates/`. Files that are already there are kept.
 
-If you used an older version, the first start copies your bills and settings from `userdata/`. You can delete that folder afterwards.
+Changing the folder doesn't move your files, so copy them over yourself if you want to keep using them. That includes bills from an older version, which kept them in `userdata/`: copy the CSV files into the data folder, and BillHQ converts old file formats when it reads them.
 
 ## Project layout
 ```
@@ -54,7 +54,7 @@ app.py            entry point
 appdata/          data layer: bills and CSV files, QR bills, translations, logging
 ui/               Textual app, the bill form, dialogs and styles.tcss
 ui/screens/       one module per area of the app
-templates/        starter CSV files copied into a new data folder
+templates/        starter CSV files for a new data folder
 tests/            pytest suite
 ```
 

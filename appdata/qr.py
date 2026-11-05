@@ -1,6 +1,6 @@
 """Swiss QR bill generation (SVG -> PNG) and QR code parsing.
 
-generate_qr_bill() writes userdata/qrbill.svg + userdata/qrbill.png and opens
+generate_qr_bill() writes qrbill.svg + qrbill.png into a folder and opens
 the PNG in the system image viewer.
 parse_qr_code() decodes a QR image (needs pyzbar+Pillow or opencv-python).
 parse_swiss_qr_payload() converts an SPC payload into bill fields.

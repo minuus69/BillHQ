@@ -5,7 +5,7 @@ import pytest
 from textual.widgets import Button, Input, Select
 
 from ui import app as bill_app
-from ui.dialogs import ConfirmDeleteModal, PayModal
+from ui.dialogs import ConfirmDeleteModal, ConfirmModal, PayModal
 from ui.screens.bills import BillRow, BillsScreen, EditBillScreen, RowButton
 from ui.screens.main_menu import MainMenuScreen
 from ui.screens.splash import SplashScreen
@@ -18,15 +18,18 @@ from ui.screens.templates import (
     AddPayerTemplateScreen, AddRecipientTemplateScreen, ManageEntryItem, ManageListScreen, ManageScreen,
 )
 from appdata.csvparser import (
-    PAYER_TEMPLATE_COLUMNS, RECIPIENT_TEMPLATE_COLUMNS, Bill, load_bills, load_settings, read_rows, save_bills,
-    write_rows,
+    PAYER_TEMPLATE_COLUMNS, RECIPIENT_TEMPLATE_COLUMNS, Bill, create_missing_files, load_bills, load_settings, read_rows,
+    save_bills, write_rows,
 )
 from appdata import paths
 
 
 @pytest.fixture
 def data_dir(isolated_home):
-    return isolated_home / "Documents" / "BillHQ"
+    """A default data folder that already has its files."""
+    folder = isolated_home / "Documents" / "BillHQ"
+    create_missing_files(folder, bill_app.TEMPLATES_DIR)
+    return folder
 
 
 def run(test):
@@ -519,9 +522,9 @@ def test_settings_changes_data_folder(data_dir, isolated_home):
         await pilot.pause(0.2)
         app.push_screen(BillsScreen())
         await pilot.pause(0.4)
-        assert len(app.screen.rows) == 3       # samples from the new folder
+        assert app.screen.rows == []           # nothing from the old folder comes along
     run(test)
-    assert (target / "data.csv").exists()
+    assert not target.exists()                 # setting it creates nothing
     assert load_settings(paths.config_dir() / "settings.toml").data_folder == str(target)
 
 
@@ -549,3 +552,112 @@ def test_startup_with_unusable_folder_gives_a_clear_message(isolated_home):
     with pytest.raises(SystemExit) as exit_info:
         bill_app.main()
     assert "data_folder" in str(exit_info.value)
+
+
+# ---- asking before creating files ----
+MENU_POSITIONS = {"all": 0, "new": 1, "scan": 2, "summary": 3, "manage": 4, "settings": 5}
+
+
+async def choose_in_menu(pilot, key):
+    for _ in range(MENU_POSITIONS[key]):
+        await pilot.press("down")
+    await pilot.press("enter")
+    await pilot.pause(0.3)
+
+
+@pytest.mark.parametrize("key, screen", [
+    ("all", BillsScreen), ("new", NewBillScreen), ("scan", ScanBillScreen),
+])
+def test_bill_screens_ask_and_create_on_yes(isolated_home, key, screen):
+    folder = isolated_home / "Documents" / "BillHQ"
+
+    async def test(app, pilot):
+        await choose_in_menu(pilot, key)
+        assert isinstance(app.screen, ConfirmModal)
+        assert not folder.exists()
+        await pilot.click("#confirm-yes")
+        await pilot.pause(0.3)
+        assert type(app.screen) is screen
+        assert len(app.core.bills) == 3
+    run(test)
+    assert {p.name for p in folder.iterdir()} == {"data.csv", "recipientList.csv", "payerList.csv"}
+
+
+@pytest.mark.parametrize("answer", ["#confirm-no", "escape"])
+def test_saying_no_creates_nothing_and_stays_on_the_menu(isolated_home, answer):
+    async def test(app, pilot):
+        await choose_in_menu(pilot, "all")
+        if answer == "escape":
+            await pilot.press("escape")
+        else:
+            await pilot.click(answer)
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, MainMenuScreen)
+    run(test)
+    assert not (isolated_home / "Documents" / "BillHQ").exists()
+
+
+@pytest.mark.parametrize("key, screen", [
+    ("summary", SummaryScreen), ("manage", ManageScreen), ("settings", SettingsScreen),
+])
+def test_other_screens_dont_ask(isolated_home, key, screen):
+    async def test(app, pilot):
+        await choose_in_menu(pilot, key)
+        assert type(app.screen) is screen
+    run(test)
+    assert not (isolated_home / "Documents" / "BillHQ").exists()
+
+
+def test_complete_folder_doesnt_ask(data_dir):
+    async def test(app, pilot):
+        await choose_in_menu(pilot, "all")
+        assert type(app.screen) is BillsScreen
+    run(test)
+
+
+def test_partly_missing_files_keep_the_bills_that_exist(data_dir):
+    (data_dir / "payerList.csv").unlink()
+    save_bills(data_dir / "data.csv", [Bill(description="mine")])
+
+    async def test(app, pilot):
+        await choose_in_menu(pilot, "all")
+        assert isinstance(app.screen, ConfirmModal)
+        await pilot.click("#confirm-yes")
+        await pilot.pause(0.3)
+        assert [b.description for b in app.core.bills] == ["mine"]
+        assert app.core.payer_templates
+    run(test)
+
+
+def test_files_copied_in_by_hand_are_used_not_overwritten(isolated_home):
+    folder = isolated_home / "Documents" / "BillHQ"
+
+    async def test(app, pilot):
+        assert app.core.bills == []
+        create_missing_files(folder, bill_app.TEMPLATES_DIR)
+        save_bills(folder / "data.csv", [Bill(description="copied")])
+        await choose_in_menu(pilot, "all")
+        assert type(app.screen) is BillsScreen
+        assert [b.description for b in app.core.bills] == ["copied"]
+    run(test)
+
+
+def test_folder_that_cant_be_created_shows_an_error(isolated_home):
+    blocker = isolated_home / "a-file"
+    blocker.write_text("x", encoding="utf-8")
+
+    async def test(app, pilot):
+        app.core.data_folder = blocker / "bills"
+        await choose_in_menu(pilot, "all")
+        await pilot.click("#confirm-yes")
+        await pilot.pause(0.3)
+        assert isinstance(app.screen, MainMenuScreen)
+    run(test)
+
+
+def test_path_with_brackets_shows_in_the_question(isolated_home):
+    async def test(app, pilot):
+        app.core.data_folder = isolated_home / "my [/bills]"
+        await choose_in_menu(pilot, "all")
+        assert isinstance(app.screen, ConfirmModal)
+    run(test)

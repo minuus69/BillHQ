@@ -9,7 +9,7 @@ import pytest
 from appdata import csvparser
 from appdata.csvparser import (
     RECIPIENT_TEMPLATE_COLUMNS, PAYER_TEMPLATE_COLUMNS, Bill, Settings, load_bills, load_settings,
-    migrate_old_files, prepare_data_folder, read_rows, save_bills, save_settings, sort_bills,
+    migrate_old_files, read_rows, save_bills, save_settings, sort_bills,
     write_rows,
 )
 
@@ -163,7 +163,7 @@ def write_old_files(folder):
 
 def test_old_files_are_converted_with_backups(tmp_path):
     write_old_files(tmp_path)
-    prepare_data_folder(tmp_path, tmp_path / "no-templates")
+    migrate_old_files(tmp_path)
 
     bill = load_bills(tmp_path / "data.csv")[0]
     assert bill.description == "Abo, Monat"

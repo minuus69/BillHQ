@@ -370,18 +370,15 @@ def migrate_old_files(userdata: Path) -> None:
     _migrate_csv(userdata / "creditorList.csv", userdata / "payerList.csv")
 
 
-def _copy_csv_files(source: Path, folder: Path) -> None:
-    for file in sorted(source.glob("*.csv")):
-        shutil.copyfile(file, folder / file.name)
-        (folder / file.name).chmod(0o600)
+def missing_data_files(folder: Path, templates: Path) -> list[str]:
+    """The starter files that the data folder doesn't have (yet)."""
+    return sorted(file.name for file in templates.glob("*.csv") if not (folder / file.name).exists())
 
 
-def prepare_data_folder(folder: Path, templates: Path, import_from: Path | None = None) -> None:
-    """Make a folder ready to use. A missing or empty one gets the starter files:
-    those from import_from if it has any, otherwise the templates. A folder with
-    anything in it keeps its contents, apart from converting old file formats."""
+def create_missing_files(folder: Path, templates: Path) -> None:
+    """Create the folder if needed and copy in the missing starter files.
+    Files that are already there are never overwritten."""
     folder.mkdir(parents=True, exist_ok=True, mode=0o700)
-    if not any(folder.iterdir()):
-        has_import = import_from is not None and any(import_from.glob("*.csv"))
-        _copy_csv_files(import_from if has_import else templates, folder)
-    migrate_old_files(folder)
+    for name in missing_data_files(folder, templates):
+        shutil.copyfile(templates / name, folder / name)
+        (folder / name).chmod(0o600)
