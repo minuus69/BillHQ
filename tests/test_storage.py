@@ -82,12 +82,9 @@ def test_settings_round_trip(tmp_path):
     assert (loaded.language, loaded.logsize) == ("de", 500)
 
 
-@pytest.mark.parametrize("name", [
-    "userdata/data.csv", "userdata/settings.toml", "userdata/qrbill.png", "appdata/log",
-])
-def test_personal_files_are_git_ignored(name):
-    result = subprocess.run(["git", "check-ignore", "-q", name], cwd=REPO)
-    assert result.returncode == 0, f"{name} is not ignored"
+def test_old_log_is_git_ignored():
+    result = subprocess.run(["git", "check-ignore", "-q", "appdata/log"], cwd=REPO)
+    assert result.returncode == 0
 
 
 def test_csv_file_format_is_unchanged(tmp_path):

@@ -201,8 +201,7 @@ def test_unknown_settings_fall_back_and_screen_opens(data_dir):
 
 
 def test_paying_a_bill_is_saved(data_dir):
-    userdata = data_dir
-    save_bills(userdata / "data.csv", [Bill(description="a", due_date="2030-01-01",
+    save_bills(data_dir / "data.csv", [Bill(description="a", due_date="2030-01-01",
                                             amount="1.00", currency="CHF")])
 
     async def test(app, pilot):
@@ -216,7 +215,7 @@ def test_paying_a_bill_is_saved(data_dir):
         assert len(list(screen.query(BillRow))) == 1
         assert app.core.bills[0].is_paid
     run(test)
-    assert "a," in (userdata / "data.csv").read_text(encoding="utf-8")
+    assert "a," in (data_dir / "data.csv").read_text(encoding="utf-8")
 
 
 def test_language_switch_returns_to_translated_menu(data_dir):

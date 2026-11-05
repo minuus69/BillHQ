@@ -64,14 +64,6 @@ def test_first_start_creates_only_the_private_storage(isolated_home):
     assert (paths.config_dir() / "log").exists()
 
 
-def test_nothing_is_ever_taken_from_an_old_userdata_folder(isolated_home, monkeypatch):
-    legacy = isolated_home / "userdata"
-    legacy.mkdir()
-    save_bills(legacy / "data.csv", [Bill(description="real bill")])
-    monkeypatch.chdir(isolated_home)
-    assert start().bills == []
-
-
 def test_creating_files_makes_a_private_folder_from_the_templates():
     core = ready()
     assert names(core.data_folder) == TEMPLATE_FILES

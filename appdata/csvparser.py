@@ -364,10 +364,10 @@ def _migrate_csv(old: Path, new: Path) -> None:
         old.unlink()
 
 
-def migrate_old_files(userdata: Path) -> None:
-    _migrate_csv(userdata / "data.csv", userdata / "data.csv")
-    _migrate_csv(userdata / "debitorList.csv", userdata / "recipientList.csv")
-    _migrate_csv(userdata / "creditorList.csv", userdata / "payerList.csv")
+def migrate_old_files(folder: Path) -> None:
+    _migrate_csv(folder / "data.csv", folder / "data.csv")
+    _migrate_csv(folder / "debitorList.csv", folder / "recipientList.csv")
+    _migrate_csv(folder / "creditorList.csv", folder / "payerList.csv")
 
 
 def missing_data_files(folder: Path, templates: Path) -> list[str]:

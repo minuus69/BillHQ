@@ -42,11 +42,14 @@ pytest
 | What | Where | Notes |
 | ---- | ----- | ----- |
 | Bills and templates | `~/Documents/BillHQ/` | Change it under Settings, "Data folder". It can be anywhere. |
-| Settings and log | `~/.config/BillHQ/` | Only your user account can open this folder. It also remembers the data folder. |
+| Settings | `~/.config/BillHQ/settings.toml` | Also remembers the data folder. Only your user account can open this folder. |
+| Log | `~/.config/BillHQ/log` | Same folder as the settings. |
+
+If `XDG_CONFIG_HOME` is set, the settings and log are in `$XDG_CONFIG_HOME/BillHQ/` instead. If BillHQ can't start because of its data folder, change `data_folder` in `settings.toml` by hand.
 
 BillHQ never creates or copies anything in the data folder on its own. When you create or open bills and files are missing from it, it asks whether to create them there from `templates/`. Files that are already there are kept.
 
-Changing the folder doesn't move your files, so copy them over yourself if you want to keep using them. That includes bills from an older version, which kept them in `userdata/`: copy the CSV files into the data folder, and BillHQ converts old file formats when it reads them.
+Changing the folder doesn't move your files, so copy them over yourself if you want to keep using them. CSV files from older versions are converted when BillHQ reads them.
 
 ## Project layout
 ```

@@ -217,6 +217,5 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# BillHQ: the old data folder and log. Data now lives outside the repo.
-userdata/
+# BillHQ: the log of older versions. Data now lives outside the repo.
 appdata/log
