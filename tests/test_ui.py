@@ -470,3 +470,29 @@ def test_manage_list_add_and_delete_with_buttons(data_dir):
     names = [r["payer_name"] for r in read_rows(data_dir / "userdata" / "creditorList.csv",
                                            PAYER_TEMPLATE_COLUMNS)]
     assert "Neu" not in names
+
+
+@pytest.mark.parametrize("size", [(120, 50), (80, 24), (200, 30)])
+def test_whole_bill_form_can_be_reached(data_dir, size):
+    """The form used to be cut off at the window height, hiding the payer fields."""
+    async def runner():
+        app = bill_app.BillApp()
+        async with app.run_test(size=size) as pilot:
+            await pilot.pause(0.1)
+            while isinstance(app.screen, SplashScreen):
+                app.screen.dismiss()
+                await pilot.pause(0.05)
+            app.push_screen(NewBillScreen())
+            await pilot.pause(0.4)
+            form = app.screen.form
+            for field in ("w_payer_name", "w_payer_city", "w_payer_country", "w_pnote"):
+                widget = getattr(form, field)
+                assert widget.region.bottom <= form.region.bottom, field
+            save = app.screen.query_one("#btn-form-save", Button)
+            assert save.region.y >= form.region.bottom
+            scroller = app.screen.query_one("#newbill-scroll")
+            scroller.scroll_end(animate=False)
+            await pilot.pause(0.2)
+            assert save.region.bottom <= scroller.region.bottom
+            assert form.w_payer_name.region.height == 3
+    asyncio.run(runner())
