@@ -1,0 +1,91 @@
+Screen { background: #101318; }
+Header { background: #151a23; color: #9db4ff; }
+#footer-hint { dock: bottom; height: 1; background: #151a23; color: #707a8c; padding: 0 1; }
+.screen-title { text-style: bold; color: #dfe6ff; margin: 0 0 1 0; }
+
+/* main menu */
+#menu-wrap { width: 100%; height: 100%; align: center middle; }
+#menu-panel { width: 68; height: auto; border: heavy #4f6df5; background: #151a23; padding: 1 3 2 3; }
+#menu-title { width: 100%; text-align: center; text-style: bold; color: #dfe6ff; padding: 1 0 2 0; }
+#menu-list { height: auto; background: #151a23; }
+#menu-list MenuItem { padding: 1 2; height: 3; }
+
+/* bill list */
+#bill-list { height: 1fr; padding: 0 1 2 1; }
+BillRow { height: auto; margin: 0; background: #151a23; border-left: thick #333d55; }
+BillRow.selected { border-left: thick #4f6df5; background: #1a2130; }
+BillRow .row-head { height: 1; width: 100%; padding: -1 0 0 1; }
+BillRow .row-head:hover { background: #212a3c; }
+BillRow .row-detail { height: auto; padding: 0 2 1 5; }
+.row-buttons { height: auto; margin-top: 1; }
+.row-buttons Button { margin-right: 2; min-width: 14; }
+.empty-hint { color: #707a8c; margin: 1; }
+#bills-search { margin: 1 2; height: 3; }
+
+BillRow .detail-view {
+    height: auto;
+    background: transparent;
+    border: none;
+    padding: 1 1;
+}
+
+/* bill form */
+.edit-form { height: auto; width: 100%; }
+.form-section { color: #8ab4f8; text-style: bold; margin-top: 1; }
+.form-grid { grid-size: 2; grid-gutter: 1 3; height: auto; margin-top: 1; width: 100%; }
+.form-cell { height: auto; width: 100%; }
+.form-cell Label { color: #8590a6; height: 1; }
+
+/* confirm delete dialog */
+ConfirmDeleteModal { align: center middle; }
+#confirm-dialog { width: 60; height: auto; border: heavy #ff4d4f; background: #151a23; padding: 1 3 2 3; }
+.dlg-msg { margin: 1 0; color: #c3cbd9; }
+
+/* pay dialog */
+PayModal { align: center middle; }
+#pay-dialog { width: 76; height: auto; border: heavy #4f6df5; background: #151a23; padding: 1 3 2 3; }
+.dlg-title { text-style: bold; color: #dfe6ff; margin-bottom: 1; }
+#pay-dialog Label { margin-top: 1; color: #8590a6; }
+.dlg-buttons { margin-top: 1; height: auto; align-horizontal: right; }
+.dlg-buttons Button { margin-left: 2; min-width: 12; }
+
+/* summary */
+#summary-scroll { height: 1fr; padding: 1 2; }
+.summary-head { text-style: bold; color: #8ab4f8; margin-top: 1; }
+.summary-block { height: auto; margin: 0 0 1 0; }
+.muted { color: #707a8c; }
+
+/* settings */
+#settings-scroll { height: 1fr; padding: 1 2; }
+#settings-panel { height: auto; border: heavy #333d55; background: #151a23; padding: 1 2; }
+.set-row { height: auto; margin: 0 0 1 0; }
+.set-label { width: 32; color: #c3cbd9; padding: 1 0; }
+.set-row Select { width: 44; }
+.set-row Input { width: 44; }
+
+/* new bill */
+#newbill-scroll { height: 1fr; padding: 1 2; width: 100%; }
+.tpl-row { height: auto; margin: 0 0 1 0; }
+.tpl-cell { width: 1fr; margin-right: 3; height: auto; }
+.tpl-cell Label { color: #8590a6; height: 1; }
+.newbill-buttons { margin-top: 1; height: auto; }
+.newbill-buttons Button { margin-right: 2; min-width: 14; }
+
+/* manage */
+#manage-scroll { height: 1fr; padding: 1 2; }
+.manage-buttons { height: auto; margin-bottom: 1; }
+.manage-buttons Button { margin-right: 2; min-width: 14; }
+.manage-entry { height: 1; padding: 0 1; }
+.manage-entry:hover { background: #212a3c; }
+.manage-entry.selected { background: #2b3650; color: #ffffff; }
+
+
+/* splash screen */
+SplashScreen { align: center middle; background: #101318; }
+#splash-box { width: 30; height: 12; align: center middle; background: #101318; }
+#splash-fox { color: #f5a623; text-align: center; width: 100%; height: 5; content-align: center middle; }
+#splash-title { text-align: center; width: 100%; height: 1; content-align: center middle; }
+#splash-tagline { text-align: center; width: 100%; height: 1; color: #707a8c; content-align: center middle; }
+
+/* scan bill */
+#scan-status { text-align: center; height: 1; margin-top: 1; }

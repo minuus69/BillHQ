@@ -4,7 +4,15 @@ import asyncio
 import pytest
 from textual.widgets import Input, Select
 
-import app as bill_app
+from ui import app as bill_app
+from ui.screens.bills import BillRow, BillsScreen, EditBillScreen
+from ui.screens.main_menu import MainMenuScreen
+from ui.screens.menus import SplashScreen
+from ui.screens.new_bill import NewBillScreen
+from ui.screens.scan import ScanBillScreen
+from ui.screens.settings import SettingsScreen
+from ui.screens.summary import SummaryScreen
+from ui.screens.templates import AddCreditorScreen, ManageListScreen, ManageScreen
 from appdata.csvparser import (
     CREDITOR_FIELDS, Bill, load_settings, read_rows, save_bills, write_rows,
 )
@@ -24,7 +32,7 @@ def run(test):
         app = bill_app.BillApp()
         async with app.run_test(size=(120, 50)) as pilot:
             await pilot.pause(0.1)
-            while isinstance(app.screen, bill_app.SplashScreen):
+            while isinstance(app.screen, SplashScreen):
                 app.screen.dismiss()
                 await pilot.pause(0.05)
             await test(app, pilot)
@@ -33,20 +41,19 @@ def run(test):
 
 
 @pytest.mark.parametrize("screen", [
-    "BillsScreen", "NewBillScreen", "ScanBillScreen",
-    "SummaryScreen", "ManageScreen", "SettingsScreen",
+    BillsScreen, NewBillScreen, ScanBillScreen, SummaryScreen, ManageScreen, SettingsScreen,
 ])
 def test_every_screen_opens(data_dir, screen):
     async def test(app, pilot):
-        app.push_screen(getattr(bill_app, screen)())
+        app.push_screen(screen())
         await pilot.pause(0.2)
-        assert type(app.screen).__name__ == screen
+        assert type(app.screen) is screen
     run(test)
 
 
 def test_arrow_keys_work_after_opening_bill_list(data_dir):
     async def test(app, pilot):
-        app.push_screen(bill_app.BillsScreen())
+        app.push_screen(BillsScreen())
         await pilot.pause(0.3)
         screen = app.screen
         assert isinstance(screen.focused, Input)      # can type to search straight away
@@ -62,7 +69,7 @@ def test_arrow_keys_work_after_opening_bill_list(data_dir):
 
 def test_enter_in_search_moves_to_the_list(data_dir):
     async def test(app, pilot):
-        app.push_screen(bill_app.BillsScreen())
+        app.push_screen(BillsScreen())
         await pilot.pause(0.3)
         await pilot.press("enter")
         await pilot.press("enter")                    # now expands the selected row
@@ -73,7 +80,7 @@ def test_enter_in_search_moves_to_the_list(data_dir):
 
 def test_manage_list_keyboard_selection(data_dir):
     async def test(app, pilot):
-        app.push_screen(bill_app.ManageListScreen("debitor"))
+        app.push_screen(ManageListScreen("debitor"))
         await pilot.pause(0.3)
         await pilot.press("down")
         await pilot.pause(0.1)
@@ -83,7 +90,7 @@ def test_manage_list_keyboard_selection(data_dir):
 
 def test_clearing_a_form_dropdown_reports_missing_field(data_dir):
     async def test(app, pilot):
-        app.push_screen(bill_app.NewBillScreen())
+        app.push_screen(NewBillScreen())
         await pilot.pause(0.2)
         form = app.screen.form
         form.w_currency.clear()
@@ -96,7 +103,7 @@ def test_clearing_a_form_dropdown_reports_missing_field(data_dir):
 
 def test_clearing_a_template_selection_is_safe(data_dir):
     async def test(app, pilot):
-        app.push_screen(bill_app.NewBillScreen())
+        app.push_screen(NewBillScreen())
         await pilot.pause(0.2)
         template = app.screen.query_one("#tpl-debtor", Select)
         template.value = 0
@@ -109,7 +116,7 @@ def test_clearing_a_template_selection_is_safe(data_dir):
 
 def test_untouched_dropdown_saves_as_empty(data_dir):
     async def test(app, pilot):
-        app.push_screen(bill_app.AddCreditorScreen())
+        app.push_screen(AddCreditorScreen())
         await pilot.pause(0.2)
         app.screen.query_one("#cred-cname", Input).value = "Test"
         app.screen.query_one("#btn-cred-save").press()
@@ -131,7 +138,7 @@ def test_editing_keeps_unusual_and_empty_values(data_dir):
                 dName="n", dPostalCode="1", dCity="c", dCountry="EE", cCountry="")
 
     async def test(app, pilot):
-        app.push_screen(bill_app.EditBillScreen(bill, 0))
+        app.push_screen(EditBillScreen(bill, 0))
         await pilot.pause(0.2)
         saved, error = app.screen.form.collect()
         assert error is None
@@ -146,8 +153,8 @@ def test_brackets_in_names_render(data_dir, name):
         app.core.debitors.append({"description": name, "dName": name})
         app.core.bills.append(Bill(description=name, dueDate="2030-01-01", bAmount="1",
                                    bCurrency="CHF", dName=name, cName=name))
-        for screen in (bill_app.ManageListScreen("creditor"), bill_app.NewBillScreen(),
-                       bill_app.BillsScreen(), bill_app.SummaryScreen()):
+        for screen in (ManageListScreen("creditor"), NewBillScreen(),
+                       BillsScreen(), SummaryScreen()):
             app.push_screen(screen)
             await pilot.pause(0.3)
             app.pop_screen()
@@ -157,7 +164,7 @@ def test_brackets_in_names_render(data_dir, name):
 
 def test_qr_error_with_brackets_is_shown_not_crashed(data_dir):
     async def test(app, pilot):
-        screen = bill_app.ScanBillScreen()
+        screen = ScanBillScreen()
         app.push_screen(screen)
         await pilot.pause(0.2)
         screen._fail("bad [/path] value")
@@ -176,7 +183,7 @@ def test_unknown_settings_fall_back_and_screen_opens(data_dir):
         ("en", "CHF", "CH")
 
     async def test(app, pilot):
-        app.push_screen(bill_app.SettingsScreen())
+        app.push_screen(SettingsScreen())
         await pilot.pause(0.3)
     run(test)
 
@@ -187,14 +194,14 @@ def test_paying_a_bill_is_saved(data_dir):
                                             bAmount="1.00", bCurrency="CHF")])
 
     async def test(app, pilot):
-        app.push_screen(bill_app.BillsScreen())
+        app.push_screen(BillsScreen())
         await pilot.pause(0.3)
         screen = app.screen
         screen._pay(screen.rows[0])
         await pilot.pause(0.2)
         await app.screen._ok()
         await pilot.pause(0.4)
-        assert len(list(screen.query(bill_app.BillRow))) == 1
+        assert len(list(screen.query(BillRow))) == 1
         assert app.core.bills[0].is_paid
     run(test)
     assert "a," in (userdata / "data.csv").read_text(encoding="utf-8")
@@ -202,10 +209,10 @@ def test_paying_a_bill_is_saved(data_dir):
 
 def test_language_switch_returns_to_translated_menu(data_dir):
     async def test(app, pilot):
-        app.push_screen(bill_app.SettingsScreen())
+        app.push_screen(SettingsScreen())
         await pilot.pause(0.3)
         app.screen.query_one("#set-language", Select).value = "de"
         await pilot.pause(0.5)
-        assert isinstance(app.screen, bill_app.MainMenuScreen)
+        assert isinstance(app.screen, MainMenuScreen)
         assert app.title == "Rechnungsverwaltung"
     run(test)
