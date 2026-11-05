@@ -13,6 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 import tempfile
+from contextlib import contextmanager
 
 from appdata.csvparser import parse_amount
 
@@ -27,6 +28,21 @@ def _system_env() -> dict[str, str]:
         if original is not None:
             env["LD_LIBRARY_PATH"] = original
     return env
+
+
+@contextmanager
+def _silence_libraries():
+    """Keep C libraries off the terminal, where they would garble the TUI. The font
+    library in a build warns about newer font configs than it knows, for example."""
+    saved = os.dup(2)
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    try:
+        os.dup2(devnull, 2)
+        yield
+    finally:
+        os.dup2(saved, 2)
+        os.close(saved)
+        os.close(devnull)
 
 
 def _webcam_command() -> list[str]:
@@ -232,7 +248,8 @@ def generate_qr_bill(bill, settings, out_dir: Path, open_viewer: bool = True) ->
     svg_path = out_dir / "qrbill.svg"
     png_path = out_dir / "qrbill.png"
     svg_path.write_text(svg, encoding="utf-8")
-    cairosvg.svg2png(bytestring=svg.encode("utf-8"), write_to=str(png_path), dpi=300)
+    with _silence_libraries():
+        cairosvg.svg2png(bytestring=svg.encode("utf-8"), write_to=str(png_path), dpi=300)
 
     if open_viewer:
         open_in_viewer(png_path)

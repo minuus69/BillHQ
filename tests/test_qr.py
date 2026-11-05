@@ -1,4 +1,5 @@
 """QR bills: generating, reading back, and the optional fields."""
+import os
 import subprocess
 import sys
 from dataclasses import replace
@@ -180,3 +181,18 @@ def test_other_programs_dont_get_the_bundled_libraries(monkeypatch):
 
 def test_self_check_passes(tmp_path):
     selfcheck.main(str(tmp_path))
+
+
+def test_library_messages_stay_off_the_terminal(capfd):
+    with qr._silence_libraries():
+        os.write(2, b"Fontconfig warning")
+    os.write(2, b"after")
+    assert capfd.readouterr().err == "after"
+
+
+def test_silencing_restores_the_terminal_after_an_error(capfd):
+    with pytest.raises(ValueError):
+        with qr._silence_libraries():
+            raise ValueError
+    os.write(2, b"after")
+    assert capfd.readouterr().err == "after"
