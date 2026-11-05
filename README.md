@@ -42,7 +42,7 @@ chmod +x BillHQ
 
 To scan bills from a file it uses `zenity` or `kdialog`, and QR bills need fonts on the system. Most desktops already have both.
 
-To build it yourself, start Docker and run this. It writes `dist/BillHQ` and builds on an old Debian, so the file also runs on older distros (glibc 2.31 or newer):
+To build it yourself, start Docker and run this. It writes `dist/BillHQ` and builds on Debian 12, so the file also runs on older distros (glibc 2.36 or newer):
 
 ```bash
 ./packaging/build_linux.sh
