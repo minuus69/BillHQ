@@ -35,7 +35,7 @@ from textual.widgets import (
 from appdata import qr
 from appdata.csvparser import (
     COUNTRIES, CURRENCIES, DATA_FIELDS, DATE_FORMATS, DEBITOR_FIELDS, CREDITOR_FIELDS,
-    FIELD_LABELS, PAY_METHODS, REQUIRED_FIELDS, Bill, Settings, amount_decimal,
+    FIELD_LABELS, REQUIRED_FIELDS, Bill, Settings, amount_decimal,
     bootstrap_files, bill_state, format_date, load_bills, load_settings, parse_amount, parse_date,
     read_rows, save_bills, save_settings, sort_bills, today_iso, write_rows,
 )
@@ -81,7 +81,7 @@ class Core:
         if key != self._sort_key:
             self._sorted = sort_bills(self.bills, self.settings.sort_by, self.settings.sort_order)
             self._sort_key = key
-        return self._sort_key and self._sorted
+        return self._sorted
 
     def persist(self) -> None:
         save_bills(self.userdata / "data.csv", self.bills)
@@ -141,41 +141,6 @@ def detail_text(bill: Bill, settings: Settings) -> str:
     ]
     return "\n".join(lines)
 
-def detail_table(bill: Bill, settings: Settings) -> Table:
-    t = Table(box=None, pad_edge=False, padding=(0, 1))
-    t.add_column(width=24, style="bold #7aa2f7", no_wrap=True)
-    t.add_column(ratio=1)
-
-    def add(label_key: str, value: str) -> None:
-        t.add_row(tr(label_key), value.strip() if value and value.strip() else "–")
-
-    def section(label_key: str) -> None:
-        t.add_row(Text(tr(label_key), style="bold underline #8ab4f8"), "")
-
-    add("f_description", bill.description)
-    add("f_due_date", format_date(bill.dueDate, settings.date_format))
-    add("f_amount", f"{amount_decimal(bill.bAmount):,.2f} {bill.bCurrency}")
-    section("payment_section")
-    add("f_paid_date", format_date(bill.paidDate, settings.date_format))
-    add("f_paid_with", bill.paidWith)
-    add("f_paid_checked", "✓" if bill.is_checked else "–")
-    add("f_account", bill.bAccount)
-    add("f_reference", bill.bReference)
-    add("f_note", bill.note)
-    section("debtor_section")
-    add("f_dname", bill.dName)
-    add("f_street", f"{bill.dStreet} {bill.dBuildingNr}".strip())
-    add("f_city", f"{bill.dPostalCode} {bill.dCity}".strip())
-    add("f_country", bill.dCountry)
-    section("creditor_section")
-    add("f_cname", bill.cName)
-    add("f_street", f"{bill.cStreet} {bill.cBuildingNr}".strip())
-    add("f_city", f"{bill.cPostalCode} {bill.cCity}".strip())
-    add("f_country", bill.cCountry)
-    add("f_private_note", bill.privateNote)
-    return t
-
-
 # --------------------------------------------------------------------------- #
 # Bill row (collapsible / expandable, with edit form)
 # --------------------------------------------------------------------------- #
@@ -185,17 +150,14 @@ class RowHead(Static):
         super().__init__(self._build_table(row.bill, settings), classes="row-head")
 
     def _build_table(self, bill: Bill, settings: Settings):
-        from rich.table import Table
-        from rich.text import Text as RichText
-
         state = bill_state(bill)
         if state == "paid":
             mark = " ✓" if bill.is_checked else ""
-            status = RichText(f"{tr('status_paid')}{mark}", style="bold #2ecc71")
+            status = Text(f"{tr('status_paid')}{mark}", style="bold #2ecc71")
         elif state == "overdue":
-            status = RichText(tr("status_overdue"), style="bold #ff4d4f")
+            status = Text(tr("status_overdue"), style="bold #ff4d4f")
         else:
-            status = RichText(tr("status_open"), style="bold #f5a623")
+            status = Text(tr("status_open"), style="bold #f5a623")
 
         due = format_date(bill.dueDate, settings.date_format) or "–"
         due_style = "bold #ff4d4f" if state == "overdue" else None
@@ -206,8 +168,8 @@ class RowHead(Static):
         t.add_column(width=12, no_wrap=True)
         t.add_column(ratio=1, no_wrap=True, overflow="ellipsis")
         t.add_column(width=18, justify="right", no_wrap=True)
-        t.add_row(status, RichText(due, style=due_style),
-                  RichText(bill.description or "–"), RichText(amount, style="bold"))
+        t.add_row(status, Text(due, style=due_style),
+                  Text(bill.description or "–"), Text(amount, style="bold"))
         return t
 
     def on_click(self) -> None:
@@ -336,7 +298,7 @@ class BillEditForm(Widget):
 
         with Vertical(classes="edit-form"):
             yield Label(f"── {tr('bill_section')} ──", classes="form-section")
-            with Grid(classes="form-grid"):  # <--- CHANGED from Vertical to Grid
+            with Grid(classes="form-grid"):
                 yield cell("f_description", self.w_description)
                 yield cell("f_due_date", self.w_due)
                 yield cell("f_amount", self.w_amount)
@@ -348,7 +310,7 @@ class BillEditForm(Widget):
                 yield cell("f_paid_with", self.w_paid_with)
                 yield Vertical(self.w_checked, classes="form-cell")
             yield Label(f"── {tr('debtor_section')} ──", classes="form-section")
-            with Grid(classes="form-grid"):  # <--- CHANGED from Vertical to Grid
+            with Grid(classes="form-grid"):
                 yield cell("f_dname", self.w_dname)
                 yield cell("f_street", self.w_dstreet)
                 yield cell("f_building_nr", self.w_dnr)
@@ -356,7 +318,7 @@ class BillEditForm(Widget):
                 yield cell("f_city", self.w_dcity)
                 yield cell("f_country", self.w_dcountry)
             yield Label(f"── {tr('creditor_section')} ──", classes="form-section")
-            with Grid(classes="form-grid"):  # <--- CHANGED from Vertical to Grid
+            with Grid(classes="form-grid"):
                 yield cell("f_cname", self.w_cname)
                 yield cell("f_street", self.w_cstreet)
                 yield cell("f_building_nr", self.w_cnr)
@@ -721,7 +683,6 @@ class ManageListScreen(Screen):
                 self.app.push_screen(AddCreditorScreen())
         elif kind == "delete":
             if 0 <= self.selected < len(self.entries):
-                entry = self.entries[self.selected]
                 async def on_confirm(result: bool) -> None:
                     if result:
                         self.entries.pop(self.selected)
@@ -732,7 +693,6 @@ class ManageListScreen(Screen):
 
     def action_delete_entry(self) -> None:
         if 0 <= self.selected < len(self.entries):
-            entry = self.entries[self.selected]
             async def on_confirm(result: bool) -> None:
                 if result:
                     self.entries.pop(self.selected)
@@ -1317,32 +1277,6 @@ class EditBillScreen(Screen):
         self.app.pop_screen()
 
 
-class SearchResultItem(Static):
-    def __init__(self, bill: Bill, settings: Settings):
-        self.bill = bill
-        super().__init__(self._build_text(bill, settings), classes="search-result")
-
-    def _build_text(self, bill: Bill, settings: Settings):
-        from rich.text import Text as RichText
-        state = bill_state(bill)
-        text = RichText()
-        if state == "paid":
-            text.append(f" {tr('status_paid'):<12}", style="bold #2ecc71")
-        elif state == "overdue":
-            text.append(f" {tr('status_overdue'):<12}", style="bold #ff4d4f")
-        else:
-            text.append(f" {tr('status_open'):<12}", style="bold #f5a623")
-        due = format_date(bill.dueDate, settings.date_format) or "–"
-        text.append(f" {due:<12}")
-        text.append(f" {bill.description or '–'}")
-        amount = f"{amount_decimal(bill.bAmount):,.2f} {bill.bCurrency}"
-        text.append(f"  {amount:>16}", style="bold")
-        return text
-
-    def on_click(self) -> None:
-        # Push a BillsScreen focused on this bill (simple approach: just notify)
-        self.notify(f"{self.bill.description}")
-
 class SummaryScreen(Screen):
     BINDINGS = [Binding("escape", "back", "Back")]
 
@@ -1486,11 +1420,8 @@ class SettingsScreen(Screen):
 
         core: Core = self.app.core
 
-        # --- ADD THIS CHECK ---
-        # Ignore events fired during initial widget mounting
-        if getattr(core.settings, key) == event.value:
+        if getattr(core.settings, key) == event.value:   # fired while mounting
             return
-        # ----------------------
 
         setattr(core.settings, key, event.value)
         core.save_settings_file()
@@ -1540,14 +1471,12 @@ Header { background: #151a23; color: #9db4ff; }
 /* bill list */
 #bill-list { height: 1fr; padding: 0 1 2 1; }
 BillRow { height: auto; margin: 0; background: #151a23; border-left: thick #333d55; }
-BillRow.expanded { height: auto; }
 BillRow.selected { border-left: thick #4f6df5; background: #1a2130; }
 BillRow .row-head { height: 1; width: 100%; padding: -1 0 0 1; }
 BillRow .row-head:hover { background: #212a3c; }
 BillRow .row-detail { height: auto; padding: 0 2 1 5; }
 .row-buttons { height: auto; margin-top: 1; }
 .row-buttons Button { margin-right: 2; min-width: 14; }
-.edit-box { height: auto; }
 .empty-hint { color: #707a8c; margin: 1; }
 #bills-search { margin: 1 2; height: 3; }
 
@@ -1564,9 +1493,6 @@ BillRow .detail-view {
 .form-grid { grid-size: 2; grid-gutter: 1 3; height: auto; margin-top: 1; width: 100%; }
 .form-cell { height: auto; width: 100%; }
 .form-cell Label { color: #8590a6; height: 1; }
-
-/* new bill */
-#newbill-scroll { height: 1fr; padding: 1 2; width: 100%; }
 
 /* confirm delete dialog */
 ConfirmDeleteModal { align: center middle; }
@@ -1596,7 +1522,7 @@ PayModal { align: center middle; }
 .set-row Input { width: 44; }
 
 /* new bill */
-#newbill-scroll { height: 1fr; padding: 1 2; }
+#newbill-scroll { height: 1fr; padding: 1 2; width: 100%; }
 .tpl-row { height: auto; margin: 0 0 1 0; }
 .tpl-cell { width: 1fr; margin-right: 3; height: auto; }
 .tpl-cell Label { color: #8590a6; height: 1; }
@@ -1620,7 +1546,6 @@ SplashScreen { align: center middle; background: #101318; }
 #splash-tagline { text-align: center; width: 100%; height: 1; color: #707a8c; content-align: center middle; }
 
 /* scan bill */
-#menu-panel Button { margin: 1 4; min-width: 20; }
 #scan-status { text-align: center; height: 1; margin-top: 1; }
 """
 

@@ -97,5 +97,4 @@ btn_load_qr,LOAD QR,QR LADEN,QR LADE,CARICA QR,CHARGER QR,CHARGIAR QR,УЧИТА
 btn_scan_qr,SCAN QR,QR SCANNEN,QR SCANNE,SCANSIONA QR,SCANNER QR,SCANNAR QR,СКАНИРАЈ QR,СКАНИРОВАТЬ QR,QRスキャン,扫描二维码,Scan QR with Cam
 scan_processing,Processing...,Verarbeiten...,Verarbeite...,Elaborazione...,Traitement...,Elavurar...,Обрада...,Обработка...,処理中...,处理中...,Looting...
 scan_no_qr,No QR code found,Kein QR-Code gefunden,Kei QR-Code gfunde,Nessun QR trovato,Aucun QR trouvé,Nagin QR chattà,QR код није пронађен,QR-код не найден,QRコードが見つかりません,未找到二维码,No Loot Found
-scan_not_swiss,Not a Swiss QR bill,Keine Schweizer QR-Rechnung,Kei Schwiizer QR-Rächnig,Non è una fattura QR svizzera,Pas une facture QR suisse,Nagin quint QR svizzer,Није швајцарски QR рачун,Не швейцарский QR-счёт,スイスのQR請求書ではありません,不是瑞士QR账单,Not Valid Swiss Loot
 search_no_results,No results found,Keine Ergebnisse gefunden,Kei Ergebnis gfunde,Nessun risultato trovato,Aucun résultat trouvé,Nagins resultats chattas,Нема резултата,Результатов не найдено,結果が見つかりません,未找到结果,No Quests found

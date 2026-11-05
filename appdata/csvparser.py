@@ -11,8 +11,9 @@ import os
 import re
 import shutil
 import tempfile
+import tomllib
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, fields as dc_fields
+from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -58,7 +59,6 @@ COUNTRIES = ["CH", "DE", "FR", "IT", "RS", "AT", "LI", "SI", "HR", "ES", "PT", "
              "BE", "LU", "GB", "IE", "SE", "NO", "DK", "FI", "PL", "CZ", "SK", "HU",
              "RO", "BG", "GR", "TR", "UA", "US", "CA", "JP", "CN", "AU", "NZ", "IN",
              "BR", "MX", "ZA", "AE", "XX"]
-PAY_METHODS = ["ZKB", "UBS", "Raiffeisen", "Post", "MB", "TWINT", "Viseca", "PayPal", "Cash"]
 DATE_FORMATS = ["dd.mm.yyyy", "dd.mm.yy", "dd/mm/yyyy", "mm/dd/yyyy", "mm/dd/yy", "yyyy-mm-dd"]
 
 
@@ -99,9 +99,6 @@ class Bill:
     def is_checked(self) -> bool:
         return self.paidChecked.strip().lower() in ("true", "1", "yes", "x")
 
-    def missing_required(self) -> list[str]:
-        return [f for f in REQUIRED_FIELDS if not str(getattr(self, f)).strip()]
-
     def to_row(self) -> dict[str, str]:
         return {f: str(getattr(self, f)) for f in DATA_FIELDS}
 
@@ -114,28 +111,11 @@ def bill_state(bill: Bill, today: date | None = None) -> str:
     """Returns 'paid', 'overdue', or 'open'."""
     if bill.is_paid:
         return "paid"
-    raw = bill.dueDate.strip()
-    if not raw:
-        return "open"
-    # Try ISO first (fast path)
     try:
-        d = date.fromisoformat(raw)
-        if d < (today or date.today()):
-            return "overdue"
-        return "open"
+        due = parse_date(bill.dueDate)
     except ValueError:
-        pass
-    # Try common formats
-    for fmt in ("%d.%m.%Y", "%d.%m.%y", "%m/%d/%Y", "%m/%d/%y",
-                "%d/%m/%Y", "%d/%m/%y", "%Y/%m/%d"):
-        try:
-            d = datetime.strptime(raw, fmt).date()
-            if d < (today or date.today()):
-                return "overdue"
-            return "open"
-        except ValueError:
-            continue
-    return "open"
+        return "open"
+    return "overdue" if due < (today or date.today()) else "open"
 
 
 _AMOUNT_RE = re.compile(r"\d+(?:[.,]\d{1,2})?")
@@ -300,34 +280,14 @@ class Settings:
     logsize: int = 2048               # max lines kept in appdata/log
 
 
-def _tiny_toml(text: str) -> dict[str, Any]:
-    """Minimal fallback parser for the flat settings file (Python < 3.11)."""
-    out: dict[str, Any] = {}
-    in_section = False
-    for raw in text.splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        if line.startswith("["):
-            in_section = line.strip("[] \t").lower() == "settings"
-            continue
-        if "=" in line and in_section:
-            key, _, value = line.partition("=")
-            out[key.strip()] = value.strip().strip('"')
-    return out
-
-
 def load_settings(path: Path) -> Settings:
     s = Settings()
     data: dict[str, Any] = {}
     if Path(path).exists():
         text = Path(path).read_text(encoding="utf-8")
         try:
-            import tomllib                      # Python 3.11+
             data = tomllib.loads(text).get("settings", {})
-        except ModuleNotFoundError:
-            data = _tiny_toml(text)
-        except Exception:
+        except tomllib.TOMLDecodeError:
             data = {}
     try:
         if str(data.get("language", "")).strip() in LANG_CODES:

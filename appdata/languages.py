@@ -2,7 +2,7 @@
 
 Translations live in languages.csv: first column = key, each further column =
 one language code. To add a language, just add a column (empty cells fall back
-to English, then to the key itself). Currently implemented: en, de.
+to English, then to the key itself).
 """
 from __future__ import annotations
 
