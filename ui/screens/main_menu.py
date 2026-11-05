@@ -3,7 +3,11 @@ from __future__ import annotations
 
 import csv
 
+from textual.app import ComposeResult
+from textual.widgets import Header, Static
+
 from appdata.languages import tr
+from appdata.version import VERSION
 from ui.dialogs import ConfirmModal
 from ui.screens.base import MenuItem, MenuScreen
 from ui.screens.bills import BillsScreen
@@ -22,7 +26,18 @@ SCREENS = {
 BILL_SCREENS = {"all", "new", "scan"}
 
 
+class VersionHeader(Header):
+    """The top bar with the app version on the right."""
+
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        yield Static(f"v{VERSION}", id="header-version")
+
+
 class MainMenuScreen(MenuScreen):
+    def compose_header(self) -> Header:
+        return VersionHeader()
+
     def menu_title(self) -> str:
         return tr("app_title")
 

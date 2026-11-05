@@ -22,6 +22,7 @@ from appdata.csvparser import (
     save_bills, write_rows,
 )
 from appdata import paths
+from appdata.version import VERSION
 
 
 @pytest.fixture
@@ -659,4 +660,14 @@ def test_path_with_brackets_shows_in_the_question(isolated_home):
         app.core.data_folder = isolated_home / "my [/bills]"
         await choose_in_menu(pilot, "all")
         assert isinstance(app.screen, ConfirmModal)
+    run(test)
+
+
+def test_main_menu_shows_the_version_on_the_right_of_the_top_bar(data_dir):
+    async def test(app, pilot):
+        label = app.screen.query_one("#header-version")
+        assert str(label.render()) == f"v{VERSION}"
+        assert label.region.y == 0
+        assert label.region.right == app.size.width
+        assert label.region.width > 0
     run(test)

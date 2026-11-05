@@ -13,8 +13,42 @@ import subprocess
 import sys
 from pathlib import Path
 import tempfile
+from contextlib import contextmanager
 
 from appdata.csvparser import parse_amount
+
+
+def _system_env() -> dict[str, str]:
+    """The environment for programs outside the app. A single-file build points
+    LD_LIBRARY_PATH at its bundled libraries, which would break them."""
+    env = dict(os.environ)
+    if getattr(sys, "frozen", False):
+        original = env.pop("LD_LIBRARY_PATH_ORIG", None)
+        env.pop("LD_LIBRARY_PATH", None)
+        if original is not None:
+            env["LD_LIBRARY_PATH"] = original
+    return env
+
+
+@contextmanager
+def _silence_libraries():
+    """Keep C libraries off the terminal, where they would garble the TUI. The font
+    library in a build warns about newer font configs than it knows, for example."""
+    saved = os.dup(2)
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    try:
+        os.dup2(devnull, 2)
+        yield
+    finally:
+        os.dup2(saved, 2)
+        os.close(saved)
+        os.close(devnull)
+
+
+def _webcam_command() -> list[str]:
+    if getattr(sys, "frozen", False):        # sys.executable is BillHQ itself, not Python
+        return [sys.executable, "--webcam-scan"]
+    return [sys.executable, "-m", "appdata.qr_webcam"]
 
 
 # --------------------------------------------------------------------------- #
@@ -28,7 +62,7 @@ def open_file_dialog() -> str | None:
             ["zenity", "--file-selection", "--title=Select QR bill",
              "--file-filter=QR Bills | *.png *.jpg *.jpeg *.bmp *.pdf",
              "--file-filter=All files | *"],
-            capture_output=True, text=True, timeout=120)
+            capture_output=True, text=True, timeout=120, env=_system_env())
         if r.returncode == 0 and r.stdout.strip():
             return r.stdout.strip()
         return None
@@ -39,7 +73,7 @@ def open_file_dialog() -> str | None:
         r = subprocess.run(
             ["kdialog", "--getopenfilename", ".",
              "*.png *.jpg *.jpeg *.bmp *.pdf | QR Bills"],
-            capture_output=True, text=True, timeout=120)
+            capture_output=True, text=True, timeout=120, env=_system_env())
         if r.returncode == 0 and r.stdout.strip():
             return r.stdout.strip()
         return None
@@ -106,7 +140,7 @@ def scan_qr_webcam() -> dict | None:
 
     try:
         result = subprocess.run(
-            [sys.executable, "-m", "appdata.qr_webcam"],
+            _webcam_command(),
             capture_output=True, text=True, timeout=180,
             cwd=Path(__file__).resolve().parent.parent,
         )
@@ -137,7 +171,7 @@ def open_in_viewer(path: Path) -> bool:
         elif sys.platform.startswith("win"):
             os.startfile(target)  # type: ignore[attr-defined]
         else:
-            subprocess.Popen(["xdg-open", target],
+            subprocess.Popen(["xdg-open", target], env=_system_env(),
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
     except OSError:
@@ -214,7 +248,8 @@ def generate_qr_bill(bill, settings, out_dir: Path, open_viewer: bool = True) ->
     svg_path = out_dir / "qrbill.svg"
     png_path = out_dir / "qrbill.png"
     svg_path.write_text(svg, encoding="utf-8")
-    cairosvg.svg2png(bytestring=svg.encode("utf-8"), write_to=str(png_path), dpi=300)
+    with _silence_libraries():
+        cairosvg.svg2png(bytestring=svg.encode("utf-8"), write_to=str(png_path), dpi=300)
 
     if open_viewer:
         open_in_viewer(png_path)

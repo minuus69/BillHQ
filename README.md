@@ -32,6 +32,24 @@ sudo apt install libzbar0       # Debian/Ubuntu
 python app.py
 ```
 
+## Single-file executable
+The Linux executable has Python and all libraries inside, so nothing needs to be installed. Put it anywhere, make it executable and start it from a terminal:
+
+```bash
+chmod +x BillHQ
+./BillHQ
+```
+
+To scan bills from a file it uses `zenity` or `kdialog`, and QR bills need fonts on the system. Most desktops already have both.
+
+To build it yourself, start Docker and run this. It writes `dist/BillHQ` and builds on Debian 12, so the file also runs on older distros (glibc 2.36 or newer):
+
+```bash
+./packaging/build_linux.sh
+```
+
+The version number is in `appdata/version.py`.
+
 ## Tests
 ```bash
 pip install -r requirements-dev.txt
@@ -58,6 +76,7 @@ appdata/          data layer: bills and CSV files, QR bills, translations, loggi
 ui/               Textual app, the bill form, dialogs and styles.tcss
 ui/screens/       one module per area of the app
 templates/        starter CSV files for a new data folder
+packaging/        builds the single-file executable
 tests/            pytest suite
 ```
 
