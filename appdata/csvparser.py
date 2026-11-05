@@ -7,11 +7,15 @@ in the configured format — that keeps sorting/parsing unambiguous.
 from __future__ import annotations
 
 import csv
+import os
+import shutil
+import tempfile
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, fields as dc_fields
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator, TextIO
 
 # --------------------------------------------------------------------------- #
 # Field definitions
@@ -195,6 +199,34 @@ def sort_bills(bills: list[Bill], sort_by: str = "dueDate", order: str = "asc") 
 
 
 # --------------------------------------------------------------------------- #
+# Safe writes
+# --------------------------------------------------------------------------- #
+@contextmanager
+def _atomic_open(path: Path, backup: bool = False) -> Iterator[TextIO]:
+    """Write to a temp file, then swap it in, so a crash can't leave a partial file.
+
+    With backup=True the previous version is kept next to it as <name>.bak.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    tmp = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", newline="", encoding="utf-8") as fh:
+            yield fh
+            fh.flush()
+            os.fsync(fh.fileno())
+        if path.exists():
+            shutil.copymode(path, tmp)
+            if backup:
+                shutil.copy2(path, path.with_name(path.name + ".bak"))
+        os.replace(tmp, path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+# --------------------------------------------------------------------------- #
 # CSV IO
 # --------------------------------------------------------------------------- #
 def load_bills(path: Path) -> list[Bill]:
@@ -205,8 +237,7 @@ def load_bills(path: Path) -> list[Bill]:
 
 
 def save_bills(path: Path, bills: list[Bill]) -> None:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", newline="", encoding="utf-8") as fh:
+    with _atomic_open(path, backup=True) as fh:
         writer = csv.DictWriter(fh, fieldnames=DATA_FIELDS, quoting=csv.QUOTE_MINIMAL)
         writer.writeheader()
         for b in bills:
@@ -221,8 +252,7 @@ def read_rows(path: Path, fields: list[str]) -> list[dict]:
 
 
 def write_rows(path: Path, fields: list[str], rows: list[dict]) -> None:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", newline="", encoding="utf-8") as fh:
+    with _atomic_open(path, backup=True) as fh:
         writer = csv.DictWriter(fh, fieldnames=fields, quoting=csv.QUOTE_MINIMAL)
         writer.writeheader()
         for r in rows:
@@ -295,14 +325,14 @@ def load_settings(path: Path) -> Settings:
 
 
 def save_settings(path: Path, s: Settings) -> None:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
     lines = ["[settings]"]
     for key, value in asdict(s).items():
         if isinstance(value, int):
             lines.append(f"{key} = {value}")
         else:
             lines.append(f'{key} = "{value}"')
-    Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    with _atomic_open(path) as fh:
+        fh.write("\n".join(lines) + "\n")
 
 
 # --------------------------------------------------------------------------- #

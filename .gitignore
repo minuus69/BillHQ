@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# BillHQ: personal data and generated files, never commit these
+userdata/*.csv
+userdata/*.bak
+userdata/*.tmp
+userdata/qrbill.*
+appdata/log
