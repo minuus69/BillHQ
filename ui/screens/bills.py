@@ -257,7 +257,7 @@ class BillsScreen(BackScreen):
 
     def _show_qr(self, row: BillRow) -> None:
         try:
-            png = qr.generate_qr_bill(row.bill, self.core.settings, self.core.userdata)
+            png = qr.generate_qr_bill(row.bill, self.core.settings, self.core.data_folder)
             self.core.logger.info(f"QR bill generated -> {png}")
             self.notify(tr("msg_qr_created"))
         except Exception as exc:

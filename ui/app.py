@@ -1,17 +1,22 @@
 """The Textual application."""
 from __future__ import annotations
 
+import csv
+import sys
 from pathlib import Path
 
 from textual.app import App
 from textual.binding import Binding
 
+from appdata import paths
 from appdata.core import Core
 from appdata.languages import tr
 from ui.screens.main_menu import MainMenuScreen
 from ui.screens.splash import SplashScreen
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+TEMPLATES_DIR = BASE_DIR / "templates"
+LEGACY_DIR = BASE_DIR / "userdata"       # where older versions kept everything
 
 
 class BillApp(App):
@@ -20,7 +25,7 @@ class BillApp(App):
 
     def __init__(self) -> None:
         super().__init__()
-        self.core = Core(BASE_DIR)
+        self.core = Core(TEMPLATES_DIR, paths.config_dir(), LEGACY_DIR)
 
     def on_mount(self) -> None:
         self.title = tr("app_title")
@@ -42,4 +47,10 @@ class BillApp(App):
 
 
 def main() -> None:
-    BillApp().run()
+    try:
+        app = BillApp()
+    except (OSError, ValueError, csv.Error) as exc:
+        settings = paths.config_dir() / "settings.toml"
+        sys.exit(f"BillHQ can't open its data folder: {exc}\n"
+                 f"You can change data_folder in {settings}")
+    app.run()

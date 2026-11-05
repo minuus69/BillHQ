@@ -14,7 +14,7 @@ import tempfile
 import tomllib
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Iterator, TextIO
@@ -298,7 +298,8 @@ class Settings:
     sort_by: str = "dueDate"          # dueDate | paidDate | description (as stored in the file)
     sort_order: str = "asc"           # asc | desc
     loglevel: str = "info"            # debug | info | error
-    logsize: int = 2048               # max lines kept in appdata/log
+    logsize: int = 2048               # max lines kept in the log
+    data_folder: str = ""             # where bills are stored, empty = ~/Documents/BillHQ
 
 
 def load_settings(path: Path) -> Settings:
@@ -325,6 +326,7 @@ def load_settings(path: Path) -> Settings:
             s.sort_order = data["sort_order"]
         if str(data.get("loglevel", "")).strip().lower() in ("debug", "info", "error"):
             s.loglevel = str(data["loglevel"]).strip().lower()
+        s.data_folder = str(data.get("data_folder", "")).strip()
         s.logsize = max(100, min(1_000_000, int(data.get("logsize", s.logsize))))
     except (TypeError, ValueError):
         pass
@@ -337,56 +339,15 @@ def save_settings(path: Path, s: Settings) -> None:
         if isinstance(value, int):
             lines.append(f"{key} = {value}")
         else:
-            lines.append(f'{key} = "{value}"')
+            escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
+            lines.append(f'{key} = "{escaped}"')
     with _atomic_open(path) as fh:
         fh.write("\n".join(lines) + "\n")
 
 
 # --------------------------------------------------------------------------- #
-# First-run bootstrap (creates userdata files with demo content)
+# Data folder setup
 # --------------------------------------------------------------------------- #
-def _sample_bills() -> list[Bill]:
-    today = date.today()
-    return [
-        Bill(
-            description="Steueramt: Finanzamt Steuerbestätigung",
-            due_date=(today + timedelta(days=8)).isoformat(),
-            amount="1250.00", currency="CHF",
-            account="CH93 0076 2011 6238 5295 7",
-            reference="21 00000 00003 13947 14300 09017",
-            note="Steuerrechnung",
-            recipient_name="Finanzamt Zürich", recipient_street="Sihlstrasse", recipient_building_nr="23",
-            recipient_postal_code="8001", recipient_city="Zürich", recipient_country="CH",
-            payer_name="Max Muster", payer_street="Musterweg", payer_building_nr="12",
-            payer_postal_code="8000", payer_city="Zürich", payer_country="CH",
-        ),
-        Bill(
-            description="Online Shop: Bestellung #4711",
-            due_date=(today + timedelta(days=40)).isoformat(),
-            amount="89.99", currency="EUR",
-            account="CH12 1234 1234 1234 1234 4",
-            reference="RF18 5390 0754 7018 5",
-            recipient_name="Beispiel Handel AG", recipient_street="Bahnhofstrasse", recipient_building_nr="1",
-            recipient_postal_code="3000", recipient_city="Bern", recipient_country="CH",
-            payer_name="Max Muster", payer_street="Musterweg", payer_building_nr="12",
-            payer_postal_code="8000", payer_city="Zürich", payer_country="CH",
-        ),
-        Bill(
-            description="Swisscom: Abo",
-            due_date=(today - timedelta(days=20)).isoformat(),
-            paid_date=(today - timedelta(days=19)).isoformat(),
-            paid_with="TWINT", paid_checked="True",
-            amount="79.90", currency="CHF",
-            account="CH93 0076 2011 6238 5295 7",
-            reference="21 00000 00003 13947 14300 09017",
-            recipient_name="Swisscom AG", recipient_street="Alte Tiefenaustrasse", recipient_building_nr="6",
-            recipient_postal_code="3048", recipient_city="Worblaufen", recipient_country="CH",
-            payer_name="Max Muster", payer_street="Musterweg", payer_building_nr="12",
-            payer_postal_code="8000", payer_city="Zürich", payer_country="CH",
-        ),
-    ]
-
-
 def _migrate_csv(old: Path, new: Path) -> None:
     """Convert a file with the old d*/c* columns, keeping the original as a backup."""
     if not old.exists() or (old != new and new.exists()):
@@ -409,37 +370,18 @@ def migrate_old_files(userdata: Path) -> None:
     _migrate_csv(userdata / "creditorList.csv", userdata / "payerList.csv")
 
 
-def bootstrap_files(userdata: Path, appdata: Path) -> None:
-    userdata.mkdir(parents=True, exist_ok=True)
-    appdata.mkdir(parents=True, exist_ok=True)
-    migrate_old_files(userdata)
+def _copy_csv_files(source: Path, folder: Path) -> None:
+    for file in sorted(source.glob("*.csv")):
+        shutil.copyfile(file, folder / file.name)
+        (folder / file.name).chmod(0o600)
 
-    log_path = appdata / "log"
-    if not log_path.exists():
-        log_path.touch()
 
-    settings_path = userdata / "settings.toml"
-    if not settings_path.exists():
-        save_settings(settings_path, Settings())
-
-    deb_path = userdata / "recipientList.csv"
-    if not deb_path.exists():
-        write_rows(deb_path, RECIPIENT_TEMPLATE_COLUMNS, [
-            {"description": "Steuerrechnung", "amount": "1250.00", "currency": "CHF",
-             "recipient_name": "Finanzamt Zürich", "recipient_street": "Sihlstrasse", "recipient_building_nr": "23",
-             "recipient_postal_code": "8001", "recipient_city": "Zürich", "recipient_country": "CH"},
-            {"description": "Stromrechnung", "amount": "85.40", "currency": "CHF",
-             "recipient_name": "EWZ", "recipient_street": "Technoparkstrasse", "recipient_building_nr": "1",
-             "recipient_postal_code": "8005", "recipient_city": "Zürich", "recipient_country": "CH"},
-        ])
-
-    cred_path = userdata / "payerList.csv"
-    if not cred_path.exists():
-        write_rows(cred_path, PAYER_TEMPLATE_COLUMNS, [
-            {"payer_name": "Max Muster", "payer_street": "Musterweg", "payer_building_nr": "12",
-             "payer_postal_code": "8000", "payer_city": "Zürich", "payer_country": "CH"},
-        ])
-
-    data_path = userdata / "data.csv"
-    if not data_path.exists():
-        save_bills(data_path, _sample_bills())
+def prepare_data_folder(folder: Path, templates: Path, import_from: Path | None = None) -> None:
+    """Make a folder ready to use. A missing or empty one gets the starter files:
+    those from import_from if it has any, otherwise the templates. A folder with
+    anything in it keeps its contents, apart from converting old file formats."""
+    folder.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if not any(folder.iterdir()):
+        has_import = import_from is not None and any(import_from.glob("*.csv"))
+        _copy_csv_files(import_from if has_import else templates, folder)
+    migrate_old_files(folder)

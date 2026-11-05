@@ -38,14 +38,23 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
+## Where your data lives
+| What | Where | Notes |
+| ---- | ----- | ----- |
+| Bills and templates | `~/Documents/BillHQ/` | Change it under Settings, "Data folder". It can be anywhere. |
+| Settings and log | `~/.config/BillHQ/` | Only your user account can open this folder. It also remembers the data folder. |
+
+If the data folder is missing or empty, BillHQ creates it and copies in the sample files from `templates/`. A folder with anything in it is left as it is. Changing the folder doesn't move your files: the old folder stays untouched, so copy your CSV files over first if you want to keep using them.
+
+If you used an older version, the first start copies your bills and settings from `userdata/`. You can delete that folder afterwards.
+
 ## Project layout
 ```
 app.py            entry point
 appdata/          data layer: bills and CSV files, QR bills, translations, logging
 ui/               Textual app, the bill form, dialogs and styles.tcss
 ui/screens/       one module per area of the app
-userdata/         your bills, templates and settings (bills and templates are not in git)
-templates/        example CSV files
+templates/        starter CSV files copied into a new data folder
 tests/            pytest suite
 ```
 

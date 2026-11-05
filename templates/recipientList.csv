@@ -1,3 +1,3 @@
 description,amount,currency,account,rName,rStreet,rBuildingNr,rPostalCode,rCity,rCountry
-Steuerrechnung,1250,CHF,CH33 3333 3333 3333 3333 3,Steueramt Zürich,Sihlstrasse,23,8001,Zürich,CH
-Stromrechnung,85.4,CHF,CH44 4444 4444 4444 4444 4,EWZ,Technoparkstrasse,1,8005,Zürich,CH
+Steuerrechnung,1250.00,CHF,CH44 3199 9123 0008 8901 2,Steueramt Zürich,Sihlstrasse,23,8001,Zürich,CH
+Stromrechnung,85.40,CHF,CH93 0076 2011 6238 5295 7,EWZ,Technoparkstrasse,1,8005,Zürich,CH

@@ -217,9 +217,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# BillHQ: personal data and generated files, never commit these
-userdata/*.csv
-userdata/*.bak
-userdata/*.tmp
-userdata/qrbill.*
+# BillHQ: the old data folder and log. Data now lives outside the repo.
+userdata/
 appdata/log
