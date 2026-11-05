@@ -1,0 +1,9 @@
+*
+!app.py
+!appdata
+!ui
+!templates
+!packaging
+!requirements-build.txt
+**/__pycache__
+appdata/log

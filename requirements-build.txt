@@ -1,0 +1,10 @@
+# Exact versions for release builds, the ones the app was tested with.
+textual==8.2.8
+chqr==1.2.5
+CairoSVG==2.9.1
+opencv-python==5.0.0.93
+pyzbar==0.1.9
+pillow==13.0.0
+PyMuPDF==2.1
+platformdirs==4.14.5
+pyinstaller==6.22.3

@@ -1,5 +1,6 @@
 Screen { background: #101318; }
 Header { background: #151a23; color: #9db4ff; }
+#header-version { dock: right; width: auto; padding: 0 1; background: #151a23; color: #9db4ff; }
 #footer-hint { dock: bottom; height: 1; background: #151a23; color: #707a8c; padding: 0 1; }
 .screen-title { text-style: bold; color: #dfe6ff; margin: 0 0 1 0; }
 

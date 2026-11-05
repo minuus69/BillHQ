@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from appdata import qr
+from appdata import qr, selfcheck
 from appdata.csvparser import REQUIRED_FIELDS, Bill, Settings
 
 REGULAR_IBAN = "CH93 0076 2011 6238 5295 7"
@@ -156,3 +156,27 @@ def test_webcam_detector_finds_a_generated_bill(tmp_path):
     png = qr.generate_qr_bill(BILL, Settings(), tmp_path, open_viewer=False)
     found = qr_webcam.try_detect(cv2.imread(str(png)), cv2.QRCodeDetector())
     assert found.startswith("SPC")
+
+
+# ---- the single-file build ----
+def test_webcam_runs_through_python_normally():
+    assert qr._webcam_command() == [sys.executable, "-m", "appdata.qr_webcam"]
+
+
+def test_webcam_restarts_the_program_in_a_build(monkeypatch):
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", "/opt/BillHQ")
+    assert qr._webcam_command() == ["/opt/BillHQ", "--webcam-scan"]
+
+
+def test_other_programs_dont_get_the_bundled_libraries(monkeypatch):
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setenv("LD_LIBRARY_PATH", "/tmp/_MEIxxx")
+    monkeypatch.delenv("LD_LIBRARY_PATH_ORIG", raising=False)
+    assert "LD_LIBRARY_PATH" not in qr._system_env()
+    monkeypatch.setenv("LD_LIBRARY_PATH_ORIG", "/usr/local/lib")
+    assert qr._system_env()["LD_LIBRARY_PATH"] == "/usr/local/lib"
+
+
+def test_self_check_passes(tmp_path):
+    selfcheck.main(str(tmp_path))

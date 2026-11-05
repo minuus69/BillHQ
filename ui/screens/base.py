@@ -50,8 +50,11 @@ class MenuScreen(BackScreen):
     def compose_below_menu(self) -> ComposeResult:
         return ()
 
+    def compose_header(self) -> Header:
+        return Header()
+
     def compose(self) -> ComposeResult:
-        yield Header()
+        yield self.compose_header()
         with Middle(id="menu-wrap"):
             with Vertical(id="menu-panel"):
                 yield Static(self.menu_title(), id="menu-title")
