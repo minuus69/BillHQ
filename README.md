@@ -38,6 +38,19 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
+## Project layout
+```
+app.py            entry point
+appdata/          data layer: bills and CSV files, QR bills, translations, logging
+ui/               Textual app, the bill form, dialogs and styles.tcss
+ui/screens/       one module per area of the app
+userdata/         your bills, templates and settings (bills and templates are not in git)
+templates/        example CSV files
+tests/            pytest suite
+```
+
+**Recipient** (`r*` columns, `recipientList.csv`) gets the money, "Payable to" on a QR bill. **Payer** (`p*` columns, `payerList.csv`) pays, "Payable by". Files from older versions (`d*`/`c*` columns, `debitorList.csv`/`creditorList.csv`) convert automatically at startup, and the originals are kept as `*.pre-rename.bak`.
+
 ## Usage
 | Key     | Action      |
 | ------- | ----------- |

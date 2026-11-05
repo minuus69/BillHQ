@@ -1,5 +1,9 @@
 """QR bills: generating, reading back, and the optional fields."""
+import subprocess
+import sys
 from dataclasses import replace
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -11,13 +15,13 @@ QR_IBAN = "CH44 3199 9123 0008 8901 2"
 QR_REF = "21 00000 00003 13947 14300 09017"
 
 BILL = Bill(
-    description="Abo", bAmount="79.90", bCurrency="CHF", bAccount=QR_IBAN, bReference=QR_REF,
-    dName="Swisscom AG", dStreet="Alte Tiefenaustrasse", dBuildingNr="6",
-    dPostalCode="3048", dCity="Worblaufen", dCountry="CH",
-    cName="Max Mustermann", cStreet="Musterweg", cBuildingNr="69",
-    cPostalCode="8000", cCity="Zürich", cCountry="CH",
+    description="Abo", amount="79.90", currency="CHF", account=QR_IBAN, reference=QR_REF,
+    recipient_name="Swisscom AG", recipient_street="Alte Tiefenaustrasse", recipient_building_nr="6",
+    recipient_postal_code="3048", recipient_city="Worblaufen", recipient_country="CH",
+    payer_name="Max Mustermann", payer_street="Musterweg", payer_building_nr="69",
+    payer_postal_code="8000", payer_city="Zürich", payer_country="CH",
 )
-NO_DEBTOR = {f: "" for f in ("cName", "cStreet", "cBuildingNr", "cPostalCode", "cCity", "cCountry")}
+NO_PAYER = {f: "" for f in ("payer_name", "payer_street", "payer_building_nr", "payer_postal_code", "payer_city", "payer_country")}
 
 
 def round_trip(bill, tmp_path):
@@ -29,27 +33,27 @@ def round_trip(bill, tmp_path):
 
 def test_qr_reference_round_trip(tmp_path):
     data = round_trip(BILL, tmp_path)
-    assert data["bAccount"] == QR_IBAN
-    assert data["bReference"] == QR_REF
-    assert data["bAmount"] == "79.90"
-    assert data["dName"] == "Swisscom AG"
-    assert data["cName"] == "Max Mustermann"
+    assert data["account"] == QR_IBAN
+    assert data["reference"] == QR_REF
+    assert data["amount"] == "79.90"
+    assert data["recipient_name"] == "Swisscom AG"
+    assert data["payer_name"] == "Max Mustermann"
 
 
 def test_creditor_reference(tmp_path):
-    bill = replace(BILL, bAccount=REGULAR_IBAN, bReference="RF18 5390 0754 7034")
-    assert round_trip(bill, tmp_path)["bReference"] == "RF18 5390 0754 7034"
+    bill = replace(BILL, account=REGULAR_IBAN, reference="RF18 5390 0754 7034")
+    assert round_trip(bill, tmp_path)["reference"] == "RF18 5390 0754 7034"
 
 
 def test_no_reference(tmp_path):
-    data = round_trip(replace(BILL, bAccount=REGULAR_IBAN, bReference=""), tmp_path)
-    assert data["bReference"] == ""
+    data = round_trip(replace(BILL, account=REGULAR_IBAN, reference=""), tmp_path)
+    assert data["reference"] == ""
 
 
-def test_no_debtor(tmp_path):
-    data = round_trip(replace(BILL, **NO_DEBTOR), tmp_path)
-    assert data["cName"] == ""
-    assert data["dName"] == "Swisscom AG"
+def test_no_payer(tmp_path):
+    data = round_trip(replace(BILL, **NO_PAYER), tmp_path)
+    assert data["payer_name"] == ""
+    assert data["recipient_name"] == "Swisscom AG"
 
 
 def test_svg_calc_is_resolved():
@@ -57,7 +61,7 @@ def test_svg_calc_is_resolved():
 
 
 def test_reference_is_not_required_to_save():
-    assert "bReference" not in REQUIRED_FIELDS
+    assert "reference" not in REQUIRED_FIELDS
 
 
 def test_pdf_scan(tmp_path):
@@ -69,12 +73,12 @@ def test_pdf_scan(tmp_path):
     pdf = tmp_path / "bill.pdf"
     doc.save(pdf)
     doc.close()
-    assert qr.parse_qr_from_file(str(pdf))["dName"] == "Swisscom AG"
+    assert qr.parse_qr_from_file(str(pdf))["recipient_name"] == "Swisscom AG"
 
 
 @pytest.mark.parametrize("change, message", [
-    ({"bCurrency": "USD"}, "CHF/EUR"),
-    ({"bAmount": "1,250"}, "invalid amount"),
+    ({"currency": "USD"}, "CHF/EUR"),
+    ({"amount": "1,250"}, "invalid amount"),
 ])
 def test_bad_bills_give_clear_errors(tmp_path, change, message):
     with pytest.raises(ValueError, match=message):
@@ -84,3 +88,71 @@ def test_bad_bills_give_clear_errors(tmp_path, change, message):
 def test_non_swiss_payload_is_rejected():
     with pytest.raises(ValueError):
         qr.parse_swiss_qr_payload("https://example.com")
+
+
+PAYLOAD = "\n".join(["SPC", "0200", "1", "CH9300762011623852957", "S", "Firma", "", "", "8000",
+                     "Zürich", "CH", "", "", "", "", "", "", "", "12.50", "CHF", "", "", "", "",
+                     "", "", "", "NON", "", "", "EPD"])
+
+
+def fake_run(monkeypatch, returncode, stdout=""):
+    calls = []
+
+    def run(cmd, **kwargs):
+        calls.append((cmd, kwargs))
+        return SimpleNamespace(returncode=returncode, stdout=stdout, stderr="")
+
+    monkeypatch.setattr(qr.subprocess, "run", run)
+    return calls
+
+
+def test_webcam_scan_parses_found_payload(monkeypatch):
+    calls = fake_run(monkeypatch, 0, PAYLOAD)
+    assert qr.scan_qr_webcam()["recipient_name"] == "Firma"
+    cmd, kwargs = calls[0]
+    assert cmd[1:] == ["-m", "appdata.qr_webcam"]
+    assert (Path(kwargs["cwd"]) / "appdata" / "qr_webcam.py").exists()
+
+
+def test_webcam_scan_cancelled(monkeypatch):
+    fake_run(monkeypatch, 1)
+    assert qr.scan_qr_webcam() is None
+
+
+def test_webcam_scan_no_camera(monkeypatch):
+    fake_run(monkeypatch, 2)
+    with pytest.raises(RuntimeError, match="camera"):
+        qr.scan_qr_webcam()
+
+
+def test_webcam_module_reports_missing_camera(monkeypatch):
+    """Without touching a real camera: every device fails to open, so it exits 2."""
+    from appdata import qr_webcam
+
+    class NoCamera:
+        def __init__(self, index):
+            pass
+
+        def isOpened(self):
+            return False
+
+        def release(self):
+            pass
+
+    monkeypatch.setattr(qr_webcam.cv2, "VideoCapture", NoCamera)
+    with pytest.raises(SystemExit) as exit_info:
+        qr_webcam.main()
+    assert exit_info.value.code == 2
+
+
+def test_webcam_module_loads_as_its_own_process():
+    root = Path(qr.__file__).resolve().parent.parent
+    subprocess.run([sys.executable, "-c", "import appdata.qr_webcam"], cwd=root, check=True)
+
+
+def test_webcam_detector_finds_a_generated_bill(tmp_path):
+    import cv2
+    from appdata import qr_webcam
+    png = qr.generate_qr_bill(BILL, Settings(), tmp_path, open_viewer=False)
+    found = qr_webcam.try_detect(cv2.imread(str(png)), cv2.QRCodeDetector())
+    assert found.startswith("SPC")

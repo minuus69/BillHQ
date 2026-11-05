@@ -104,117 +104,11 @@ def _parse_qr_from_pdf(pdf_path: str) -> dict:
 def scan_qr_webcam() -> dict | None:
     """Open webcam with live QR scanning. Auto-detects Swiss QR bills."""
 
-    script_content = '''\
-import cv2, sys, time
-
-try:
-    from pyzbar.pyzbar import decode as pyzbar_decode
-    HAS_PYZBAR = True
-except ImportError:
-    HAS_PYZBAR = False
-
-cap = None
-for idx in range(4):
-    cap = cv2.VideoCapture(idx)
-    if cap.isOpened():
-        break
-    cap.release()
-
-if cap is None or not cap.isOpened():
-    print("ERROR: Could not open any camera", file=sys.stderr)
-    sys.exit(2)
-
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-
-for _ in range(20):
-    cap.read()
-    time.sleep(0.03)
-
-cv2_detector = cv2.QRCodeDetector()
-frame_count = 0
-
-def try_detect(frame):
-    """Try multiple detection strategies. Returns SPC payload or None."""
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # Strategy 1: pyzbar on grayscale (best detector)
-    if HAS_PYZBAR:
-        for r in pyzbar_decode(gray):
-            text = r.data.decode("utf-8", "replace")
-            if text.startswith("SPC"):
-                return text
-
-    # Strategy 2: pyzbar on upscaled
-    if HAS_PYZBAR:
-        upscaled = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
-        for r in pyzbar_decode(upscaled):
-            text = r.data.decode("utf-8", "replace")
-            if text.startswith("SPC"):
-                return text
-
-    # Strategy 3: OpenCV detectAndDecodeMulti
-    try:
-        retval, decoded_info, points, straight = cv2_detector.detectAndDecodeMulti(gray)
-        if retval:
-            for data in decoded_info:
-                if data and data.startswith("SPC"):
-                    return data
-    except Exception:
-        pass
-
-    # Strategy 4: pyzbar on thresholded
-    if HAS_PYZBAR:
-        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        for r in pyzbar_decode(binary):
-            text = r.data.decode("utf-8", "replace")
-            if text.startswith("SPC"):
-                return text
-
-    return None
-
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
-
-    frame_count += 1
-    found = None
-
-    # Try detection every frame (pyzbar is fast enough)
-    if frame_count % 2 == 0:
-        found = try_detect(frame)
-
-    if found:
-        cv2.putText(frame, "QR BILL DETECTED!", (10, 100),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3)
-        cv2.imshow("BillHQ - QR Scanner", frame)
-        cv2.waitKey(700)
-        cap.release()
-        cv2.destroyAllWindows()
-        print(found)
-        sys.exit(0)
-
-    cv2.putText(frame, "PRESS ESC TO EXIT", (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 200, 255), 2)
-    cv2.putText(frame, "Scanning for Swiss QR bill...", (10, 62),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 1)
-    cv2.imshow("BillHQ - QR Scanner", frame)
-
-    k = cv2.waitKey(1) & 0xFF
-    if k == 27:
-        break
-
-cap.release()
-cv2.destroyAllWindows()
-sys.exit(1)
-'''
-
     try:
         result = subprocess.run(
-            [sys.executable, "-c", script_content],
+            [sys.executable, "-m", "appdata.qr_webcam"],
             capture_output=True, text=True, timeout=180,
-            env={**os.environ},
+            cwd=Path(__file__).resolve().parent.parent,
         )
     except subprocess.TimeoutExpired:
         raise RuntimeError("Webcam scan timed out")
@@ -254,7 +148,7 @@ def _resolve_svg_calc(svg: str) -> str:
     """Turn calc(52.6mm - 3mm - 0.3mm) into 49.3mm.
 
     chqr uses these for the corner marks of empty address boxes (a bill with no
-    debtor), and cairosvg can't read calc().
+    payer), and cairosvg can't read calc().
     """
     def resolve(match: re.Match) -> str:
         first, *rest = re.findall(r"[\d.]+", match.group(1))
@@ -275,15 +169,15 @@ def generate_qr_bill(bill, settings, out_dir: Path, open_viewer: bool = True) ->
     except ImportError as exc:
         raise RuntimeError("package 'cairosvg' is missing - run: pip install cairosvg") from exc
 
-    currency = (bill.bCurrency or "").strip().upper()
+    currency = (bill.currency or "").strip().upper()
     if currency not in ("CHF", "EUR"):
         raise ValueError(f"Swiss QR bills only support CHF/EUR (bill has {currency!r})")
 
-    amount = parse_amount(bill.bAmount)
+    amount = parse_amount(bill.amount)
 
     # per spec: ALL SPACES MUST BE REMOVED from account and reference
-    account = (bill.bAccount or "").replace(" ", "")
-    reference = (bill.bReference or "").replace(" ", "")
+    account = (bill.account or "").replace(" ", "")
+    reference = (bill.reference or "").replace(" ", "")
     if not reference:
         reference_type = "NON"
     elif reference.upper().startswith("RF"):
@@ -292,15 +186,15 @@ def generate_qr_bill(bill, settings, out_dir: Path, open_viewer: bool = True) ->
         reference_type = "QRR"
 
     creditor = Creditor(
-        name=bill.dName, street=bill.dStreet, building_number=bill.dBuildingNr,
-        postal_code=bill.dPostalCode, city=bill.dCity, country=bill.dCountry,
+        name=bill.recipient_name, street=bill.recipient_street, building_number=bill.recipient_building_nr,
+        postal_code=bill.recipient_postal_code, city=bill.recipient_city, country=bill.recipient_country,
     )
-    # c* fields hold the person paying, which is optional on a QR bill
+    # the person paying is optional on a QR bill
     debtor = None
-    if (bill.cName or "").strip():
+    if (bill.payer_name or "").strip():
         debtor = UltimateDebtor(
-            name=bill.cName, street=bill.cStreet, building_number=bill.cBuildingNr,
-            postal_code=bill.cPostalCode, city=bill.cCity, country=bill.cCountry,
+            name=bill.payer_name, street=bill.payer_street, building_number=bill.payer_building_nr,
+            postal_code=bill.payer_postal_code, city=bill.payer_city, country=bill.payer_country,
         )
     qrbill = QRBill(
         account=account,
@@ -420,8 +314,7 @@ def format_reference(ref: str) -> str:
 def parse_swiss_qr_payload(text: str) -> dict:
     """Parse a Swiss QR bill payload (SPC) into bill field names.
 
-    Mapping: QR Creditor (receives money) -> d* fields (the company)
-             QR Ultimate Debtor (pays)    -> c* fields (the user)
+    The QR standard's creditor is our recipient, its ultimate debtor is our payer.
     """
     lines = (text or "").replace("\r", "").split("\n")
     if len(lines) < 31 or lines[0].strip() != "SPC":
@@ -431,14 +324,14 @@ def parse_swiss_qr_payload(text: str) -> dict:
         return lines[i].strip() if i < len(lines) else ""
 
     return {
-        "bAccount": format_iban(g(3)),
-        # QR Creditor (lines 4-10) = the company = d* in this app
-        "dName": g(5), "dStreet": g(6), "dBuildingNr": g(7),
-        "dPostalCode": g(8), "dCity": g(9), "dCountry": g(10),
-        "bAmount": g(18), "bCurrency": g(19),
-        # QR Ultimate Debtor (lines 20-26) = the user = c* in this app
-        "cName": g(21), "cStreet": g(22), "cBuildingNr": g(23),
-        "cPostalCode": g(24), "cCity": g(25), "cCountry": g(26),
-        "bReference": format_reference(g(28)),
+        "account": format_iban(g(3)),
+        # QR creditor (lines 4-10)
+        "recipient_name": g(5), "recipient_street": g(6), "recipient_building_nr": g(7),
+        "recipient_postal_code": g(8), "recipient_city": g(9), "recipient_country": g(10),
+        "amount": g(18), "currency": g(19),
+        # QR ultimate debtor (lines 20-26)
+        "payer_name": g(21), "payer_street": g(22), "payer_building_nr": g(23),
+        "payer_postal_code": g(24), "payer_city": g(25), "payer_country": g(26),
+        "reference": format_reference(g(28)),
         "note": g(29),
     }

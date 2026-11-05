@@ -1,1 +1,1 @@
-# Keeps the repo root importable for tests (app.py and appdata/).
+# Keeps the repo root importable for tests (appdata/ and ui/).
