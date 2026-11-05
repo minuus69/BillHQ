@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import date, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
 
@@ -36,7 +36,7 @@ from appdata import qr
 from appdata.csvparser import (
     COUNTRIES, CURRENCIES, DATA_FIELDS, DATE_FORMATS, DEBITOR_FIELDS, CREDITOR_FIELDS,
     FIELD_LABELS, PAY_METHODS, REQUIRED_FIELDS, Bill, Settings, amount_decimal,
-    bootstrap_files, bill_state, format_date, load_bills, load_settings, parse_date,
+    bootstrap_files, bill_state, format_date, load_bills, load_settings, parse_amount, parse_date,
     read_rows, save_bills, save_settings, sort_bills, today_iso, write_rows,
 )
 from appdata.languages import LANG_CODES, LANG_NAMES, set_language, tr
@@ -95,6 +95,11 @@ class Core:
 def format_amount(value) -> str:
     """1234.5 -> 1'234.50"""
     return f"{value:,.2f}".replace(",", "'")
+
+
+def select_text(select: Select) -> str:
+    """The chosen option, or "" when a dropdown is blank (its value isn't a string then)."""
+    return select.value if isinstance(select.value, str) else ""
 
 # --------------------------------------------------------------------------- #
 # Rich renderables (one-line summary + expanded detail)
@@ -284,6 +289,14 @@ class BillEditForm(Widget):
         self.inputs[field] = widget
         return widget
 
+    def _choice(self, field: str, options: list[str], value: str) -> Select:
+        """Dropdown showing the bill's current value, even if it isn't a standard
+        option, so editing a bill never silently changes it."""
+        choices = options if not value or value in options else [*options, value]
+        preset = {"value": value} if value else {}
+        return Select([(c, c) for c in choices], allow_blank=True, prompt="–",
+                      id=f"{self.prefix}-{field}", **preset)
+
     def _build(self) -> None:
         b, fmt = self.bill, self.settings.date_format
         self.w_description = self._inp("description", b.description)
@@ -295,11 +308,7 @@ class BillEditForm(Widget):
                                   id=f"{self.prefix}-paidChecked")
         self.w_amount = self._inp("bAmount", b.bAmount, placeholder="0.00")
 
-        cur_val = b.bCurrency if b.bCurrency in CURRENCIES else CURRENCIES[0]
-        self.w_currency = Select([(c, c) for c in CURRENCIES],
-                                 value=cur_val, allow_blank=True, prompt="–",
-                                 id=f"{self.prefix}-bCurrency")
-
+        self.w_currency = self._choice("bCurrency", CURRENCIES, b.bCurrency)
         self.w_account = self._inp("bAccount", b.bAccount,
                                    placeholder="CH12 1234 1234 1234 1234 4")
         self.w_reference = self._inp("bReference", b.bReference,
@@ -311,22 +320,14 @@ class BillEditForm(Widget):
         self.w_dpc = self._inp("dPostalCode", b.dPostalCode)
         self.w_dcity = self._inp("dCity", b.dCity)
 
-        dc_val = b.dCountry if b.dCountry in COUNTRIES else COUNTRIES[0]
-        self.w_dcountry = Select([(c, c) for c in COUNTRIES],
-                                 value=dc_val, allow_blank=True, prompt="–",
-                                 id=f"{self.prefix}-dCountry")
-
+        self.w_dcountry = self._choice("dCountry", COUNTRIES, b.dCountry)
         self.w_cname = self._inp("cName", b.cName)
         self.w_cstreet = self._inp("cStreet", b.cStreet)
         self.w_cnr = self._inp("cBuildingNr", b.cBuildingNr)
         self.w_cpc = self._inp("cPostalCode", b.cPostalCode)
         self.w_ccity = self._inp("cCity", b.cCity)
 
-        cc_val = b.cCountry if b.cCountry in COUNTRIES else COUNTRIES[0]
-        self.w_ccountry = Select([(c, c) for c in COUNTRIES],
-                                 value=cc_val, allow_blank=True, prompt="–",
-                                 id=f"{self.prefix}-cCountry")
-
+        self.w_ccountry = self._choice("cCountry", COUNTRIES, b.cCountry)
         self.w_pnote = self._inp("privateNote", b.privateNote)
 
     def compose(self) -> ComposeResult:
@@ -390,9 +391,9 @@ class BillEditForm(Widget):
     def collect(self) -> tuple[Bill | None, str | None]:
         """Returns (bill, None) on success or (None, error_message)."""
         vals = {f: w.value.strip() for f, w in self.inputs.items()}
-        vals["bCurrency"] = (self.w_currency.value or "").strip()
-        vals["dCountry"] = (self.w_dcountry.value or "").strip()
-        vals["cCountry"] = (self.w_ccountry.value or "").strip()
+        vals["bCurrency"] = select_text(self.w_currency)
+        vals["dCountry"] = select_text(self.w_dcountry)
+        vals["cCountry"] = select_text(self.w_ccountry)
         vals["paidChecked"] = "True" if self.w_checked.value else "False"
 
         errors: list[str] = []
@@ -404,9 +405,8 @@ class BillEditForm(Widget):
         raw = vals.get("bAmount", "")
         if raw:
             try:
-                amt = Decimal(raw.replace("'", "").replace(" ", "").replace(",", "."))
-                vals["bAmount"] = f"{amt:.2f}"
-            except InvalidOperation:
+                vals["bAmount"] = f"{parse_amount(raw):.2f}"
+            except ValueError:
                 errors.append(tr("msg_invalid_amount"))
 
         for f in ("dueDate", "paidDate"):
@@ -636,6 +636,8 @@ class ManageScreen(Screen):
 
 class ManageListScreen(Screen):
     BINDINGS = [
+        Binding("up", "nav_up", "Up"),
+        Binding("down", "nav_down", "Down"),
         Binding("escape", "back", "Back"),
         Binding("delete", "delete_entry", "Delete"),
     ]
@@ -696,6 +698,19 @@ class ManageListScreen(Screen):
         items = self.query(ManageEntryItem)
         for i, item in enumerate(items):
             item.set_class(i == self.selected, "selected")
+            if i == self.selected:
+                item.scroll_visible()
+
+    def action_nav_up(self) -> None:
+        self._move(-1)
+
+    def action_nav_down(self) -> None:
+        self._move(1)
+
+    def _move(self, delta: int) -> None:
+        if self.entries:
+            self.selected = max(0, min(len(self.entries) - 1, self.selected + delta))
+            self._highlight()
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         kind = getattr(event.button, "kind", None)
@@ -742,7 +757,7 @@ class ManageListScreen(Screen):
 
 class ManageEntryItem(Static):
     def __init__(self, label: str, index: int):
-        super().__init__(f" {label}", classes="manage-entry")
+        super().__init__(f" {label}", classes="manage-entry", markup=False)
         self.entry_index = index
 
     def on_click(self) -> None:
@@ -788,15 +803,21 @@ class AddDebitorScreen(Screen):
             entry = {
                 "description": self.query_one("#deb-description", Input).value.strip(),
                 "amount": self.query_one("#deb-amount", Input).value.strip(),
-                "currency": self.query_one("#deb-currency", Select).value or "",
+                "currency": select_text(self.query_one("#deb-currency", Select)),
                 "account": self.query_one("#deb-account", Input).value.strip(),
                 "dName": self.query_one("#deb-dname", Input).value.strip(),
                 "dStreet": self.query_one("#deb-dstreet", Input).value.strip(),
                 "dBuildingNr": self.query_one("#deb-dnr", Input).value.strip(),
                 "dPostalCode": self.query_one("#deb-dpc", Input).value.strip(),
                 "dCity": self.query_one("#deb-dcity", Input).value.strip(),
-                "dCountry": self.query_one("#deb-dcountry", Select).value or "",
+                "dCountry": select_text(self.query_one("#deb-dcountry", Select)),
             }
+            if entry["amount"]:
+                try:
+                    entry["amount"] = f"{parse_amount(entry['amount']):.2f}"
+                except ValueError:
+                    self.notify(tr("msg_invalid_amount"), severity="error")
+                    return
             if not entry["dName"]:
                 self.notify(tr("msg_missing_required").format(fields=tr("f_dname")),
                             severity="error")
@@ -845,7 +866,7 @@ class AddCreditorScreen(Screen):
                 "cBuildingNr": self.query_one("#cred-cnr", Input).value.strip(),
                 "cPostalCode": self.query_one("#cred-cpc", Input).value.strip(),
                 "cCity": self.query_one("#cred-ccity", Input).value.strip(),
-                "cCountry": self.query_one("#cred-ccountry", Select).value or "",
+                "cCountry": select_text(self.query_one("#cred-ccountry", Select)),
             }
             if not entry["cName"]:
                 self.notify(tr("msg_missing_required").format(fields=tr("f_cname")),
@@ -922,8 +943,8 @@ class ScanBillScreen(Screen):
         self.app.push_screen(ScanEditScreen(bill))
 
     def _fail(self, msg: str) -> None:
-        self.query_one("#scan-status", Static).update(f"[red]{msg}[/red]")
-        self.notify(msg, severity="error")
+        self.query_one("#scan-status", Static).update(Text(msg, style="red"))
+        self.notify(msg, severity="error", markup=False)
 
     def _clear_status(self) -> None:
         self.query_one("#scan-status", Static).update("")
@@ -997,7 +1018,13 @@ class BillsScreen(Screen):
         yield Static(tr("hint_nav"), id="footer-hint")
 
     async def on_mount(self) -> None:
+        # Tab should land on the rows' buttons; the list itself would swallow arrow keys
+        self.query_one("#bill-list", VerticalScroll).can_focus = False
         await self.rebuild()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id == "bills-search":
+            self.app.set_focus(None)
 
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id == "bills-search":
@@ -1064,7 +1091,12 @@ class BillsScreen(Screen):
         self._move(1)
 
     def _move(self, delta: int) -> None:
-        if not self.rows or self._form_focused():
+        if not self.rows:
+            return
+        if isinstance(self.focused, Input):       # arrow keys leave the search box
+            self.app.set_focus(None)
+            return
+        if self._form_focused():
             return
         self.selected = max(0, min(len(self.rows) - 1, self.selected + delta))
         self._highlight()
@@ -1122,7 +1154,8 @@ class BillsScreen(Screen):
             self.notify(tr("msg_qr_created"))
         except Exception as exc:
             self.core.logger.error(f"QR generation failed: {exc}")
-            self.notify(tr("err_qr_failed").format(err=exc), severity="error", timeout=10)
+            self.notify(tr("err_qr_failed").format(err=exc), severity="error", timeout=10,
+                        markup=False)
 
     def _pay(self, row: BillRow) -> None:
         async def confirm(result: dict) -> None:
@@ -1202,7 +1235,7 @@ class NewBillScreen(Screen):
         return opts
 
     def on_select_changed(self, event: Select.Changed) -> None:
-        if event.value is None:
+        if not isinstance(event.value, int):      # dropdown cleared
             return
         core: Core = self.app.core
         if event.select.id == "tpl-debtor" and event.value < len(core.debitors):
@@ -1359,7 +1392,7 @@ class SummaryScreen(Screen):
                 t2.add_column(width=10)
                 t2.add_column(justify="right", width=18)
                 for cur in sorted(sums2):
-                    t2.add_row(Text(cur, style="bold"), Text(f"{sums2[cur]:,.2f}", style="bold #2ecc71"))
+                    t2.add_row(Text(cur, style="bold"), Text(format_amount(sums2[cur]), style="bold #2ecc71"))
                 yield Static(t2, classes="summary-block")
                 yield Static(tr("summary_count").format(n=len(paid)), classes="muted")
             else:
@@ -1414,11 +1447,11 @@ class SettingsScreen(Screen):
                     [(f, f) for f in DATE_FORMATS], value=s.date_format, id="set-date-format"))
                 yield self._row(tr("set_currency"), Select(
                     [(c, c) for c in CURRENCIES],
-                    value=s.default_currency if s.default_currency in CURRENCIES else None,
+                    value=s.default_currency,
                     id="set-currency"))
                 yield self._row(tr("set_country"), Select(
                     [(c, c) for c in COUNTRIES],
-                    value=s.default_country if s.default_country in COUNTRIES else None,
+                    value=s.default_country,
                     id="set-country"))
                 yield self._row(tr("set_sort_by"), Select(
                     [(tr("sort_due_date"), "dueDate"), (tr("sort_paid_date"), "paidDate"),
@@ -1448,7 +1481,7 @@ class SettingsScreen(Screen):
             "set-loglevel": "loglevel",
         }
         key = mapping.get(event.select.id or "")
-        if key is None or event.value is None:
+        if key is None or not isinstance(event.value, str):
             return
 
         core: Core = self.app.core

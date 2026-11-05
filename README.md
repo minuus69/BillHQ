@@ -18,13 +18,24 @@ A terminal-based bill management app with Swiss QR-bill support. Built with [Tex
 ## Install
 
 ```bash
+python -m venv venv
+source venv/bin/activate.fish   # or venv/bin/activate for bash/zsh
 pip install -r requirements.txt
-sudo apt install libzbar0   # Linux only, needed for QR scanning (optional)
+
+# needed for QR scanning (optional)
+sudo pacman -S zbar             # Arch
+sudo apt install libzbar0       # Debian/Ubuntu
 ```
 
 ## Run
 ```bash
 python app.py
+```
+
+## Tests
+```bash
+pip install -r requirements-dev.txt
+pytest
 ```
 
 ## Usage

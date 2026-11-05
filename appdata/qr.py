@@ -8,11 +8,13 @@ parse_swiss_qr_payload() converts an SPC payload into bill fields.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
-from decimal import Decimal, InvalidOperation
 from pathlib import Path
 import tempfile
+
+from appdata.csvparser import parse_amount
 
 
 # --------------------------------------------------------------------------- #
@@ -74,11 +76,11 @@ def parse_qr_from_file(file_path: str) -> dict:
 def _parse_qr_from_pdf(pdf_path: str) -> dict:
     """Render each PDF page to an image and look for a Swiss QR bill."""
     try:
-        import fitz  # PyMuPDF
+        import pymupdf
     except ImportError as exc:
         raise RuntimeError("PDF support needs PyMuPDF: pip install PyMuPDF") from exc
 
-    doc = fitz.open(pdf_path)
+    doc = pymupdf.open(pdf_path)
     try:
         for page in doc:
             pix = page.get_pixmap(dpi=200)
@@ -248,6 +250,19 @@ def open_in_viewer(path: Path) -> bool:
         return False
 
 
+def _resolve_svg_calc(svg: str) -> str:
+    """Turn calc(52.6mm - 3mm - 0.3mm) into 49.3mm.
+
+    chqr uses these for the corner marks of empty address boxes (a bill with no
+    debtor), and cairosvg can't read calc().
+    """
+    def resolve(match: re.Match) -> str:
+        first, *rest = re.findall(r"[\d.]+", match.group(1))
+        return f"{float(first) - sum(map(float, rest)):.4f}mm"
+
+    return re.sub(r"calc\(([\d.]+mm(?: - [\d.]+mm)+)\)", resolve, svg)
+
+
 def generate_qr_bill(bill, settings, out_dir: Path, open_viewer: bool = True) -> Path:
     """Build the Swiss QR bill for `bill`, write SVG+PNG into out_dir, open the
     PNG in an image viewer and return the PNG path."""
@@ -263,27 +278,30 @@ def generate_qr_bill(bill, settings, out_dir: Path, open_viewer: bool = True) ->
     currency = (bill.bCurrency or "").strip().upper()
     if currency not in ("CHF", "EUR"):
         raise ValueError(f"Swiss QR bills only support CHF/EUR (bill has {currency!r})")
-    if not (bill.cName or "").strip():
-        raise ValueError("QR bill needs creditor data (cName ...) - EDIT the bill first")
 
-    try:
-        amount = Decimal(str(bill.bAmount).replace("'", "").replace(" ", "").replace(",", "."))
-    except InvalidOperation as exc:
-        raise ValueError(f"invalid amount: {bill.bAmount!r}") from exc
+    amount = parse_amount(bill.bAmount)
 
     # per spec: ALL SPACES MUST BE REMOVED from account and reference
     account = (bill.bAccount or "").replace(" ", "")
     reference = (bill.bReference or "").replace(" ", "")
-    reference_type = "SCOR" if reference.upper().startswith("RF") else "QRR"
+    if not reference:
+        reference_type = "NON"
+    elif reference.upper().startswith("RF"):
+        reference_type = "SCOR"
+    else:
+        reference_type = "QRR"
 
     creditor = Creditor(
         name=bill.dName, street=bill.dStreet, building_number=bill.dBuildingNr,
         postal_code=bill.dPostalCode, city=bill.dCity, country=bill.dCountry,
     )
-    debtor = UltimateDebtor(
-        name=bill.cName, street=bill.cStreet, building_number=bill.cBuildingNr,
-        postal_code=bill.cPostalCode, city=bill.cCity, country=bill.cCountry,
-    )
+    # c* fields hold the person paying, which is optional on a QR bill
+    debtor = None
+    if (bill.cName or "").strip():
+        debtor = UltimateDebtor(
+            name=bill.cName, street=bill.cStreet, building_number=bill.cBuildingNr,
+            postal_code=bill.cPostalCode, city=bill.cCity, country=bill.cCountry,
+        )
     qrbill = QRBill(
         account=account,
         creditor=creditor,
@@ -291,10 +309,11 @@ def generate_qr_bill(bill, settings, out_dir: Path, open_viewer: bool = True) ->
         amount=amount,
         currency=currency,
         reference_type=reference_type,
-        reference=reference,
+        reference=reference or None,
         additional_information=(bill.note or "")[:140] or None,
     )
-    svg = qrbill.generate_svg(language=_qr_language(getattr(settings, "language", "en")))
+    svg = _resolve_svg_calc(
+        qrbill.generate_svg(language=_qr_language(getattr(settings, "language", "en"))))
 
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

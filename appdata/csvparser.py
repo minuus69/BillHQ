@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import os
+import re
 import shutil
 import tempfile
 from contextlib import contextmanager
@@ -16,6 +17,8 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Iterator, TextIO
+
+from appdata.languages import LANG_CODES
 
 # --------------------------------------------------------------------------- #
 # Field definitions
@@ -30,7 +33,7 @@ DATA_FIELDS = [
 
 # fields marked with * in the spec: must be non-empty to be saved
 REQUIRED_FIELDS = [
-    "description", "bAmount", "bCurrency", "bAccount", "bReference",
+    "description", "bAmount", "bCurrency", "bAccount",
     "dName", "dPostalCode", "dCity", "dCountry",
 ]
 
@@ -50,7 +53,7 @@ FIELD_LABELS = {
     "cCountry": "f_country", "privateNote": "f_private_note",
 }
 
-CURRENCIES = ["CHF", "EUR", "USD", "RSD", "YEN", "CNY"]
+CURRENCIES = ["CHF", "EUR", "USD", "RSD", "JPY", "CNY"]
 COUNTRIES = ["CH", "DE", "FR", "IT", "RS", "AT", "LI", "SI", "HR", "ES", "PT", "NL",
              "BE", "LU", "GB", "IE", "SE", "NO", "DK", "FI", "PL", "CZ", "SK", "HU",
              "RO", "BG", "GR", "TR", "UA", "US", "CA", "JP", "CN", "AU", "NZ", "IN",
@@ -135,11 +138,28 @@ def bill_state(bill: Bill, today: date | None = None) -> str:
     return "open"
 
 
+_AMOUNT_RE = re.compile(r"\d+(?:[.,]\d{1,2})?")
+
+
+def parse_amount(text: str) -> Decimal:
+    """Strictly parse a typed amount: 12.50, 12,50, 1'250.50 or 1 250.
+
+    Raises ValueError for anything else. That includes 1,250 and 1.250, where the
+    separator could mean thousands or decimals, so we never guess a wrong amount.
+    """
+    cleaned = re.sub(r"['\u2019\s]", "", str(text))
+    if not _AMOUNT_RE.fullmatch(cleaned):
+        raise ValueError(f"invalid amount: {text!r}")
+    return Decimal(cleaned.replace(",", "."))
+
+
 def amount_decimal(text: str) -> Decimal:
+    """Lenient version for display and totals: unreadable stored values count as 0."""
     try:
-        return Decimal(str(text).replace("'", "").replace(" ", "").replace(",", ".") or "0")
+        value = Decimal(str(text).replace("'", "").replace(" ", "").replace(",", ".") or "0")
     except InvalidOperation:
         return Decimal("0")
+    return value if value.is_finite() else Decimal("0")
 
 
 def today_iso() -> str:
@@ -244,11 +264,17 @@ def save_bills(path: Path, bills: list[Bill]) -> None:
             writer.writerow(b.to_row())
 
 
+def _clean_cell(value: str | None) -> str:
+    """Older versions could store an untouched dropdown as this text."""
+    value = (value or "").strip()
+    return "" if value in ("Select.NULL", "Select.BLANK") else value
+
+
 def read_rows(path: Path, fields: list[str]) -> list[dict]:
     if not Path(path).exists():
         return []
     with open(path, newline="", encoding="utf-8") as fh:
-        return [{k: (row.get(k) or "").strip() for k in fields} for row in csv.DictReader(fh)]
+        return [{k: _clean_cell(row.get(k)) for k in fields} for row in csv.DictReader(fh)]
 
 
 def write_rows(path: Path, fields: list[str], rows: list[dict]) -> None:
@@ -304,13 +330,13 @@ def load_settings(path: Path) -> Settings:
         except Exception:
             data = {}
     try:
-        if str(data.get("language", "")).strip():
+        if str(data.get("language", "")).strip() in LANG_CODES:
             s.language = str(data["language"]).strip()
         if data.get("date_format") in DATE_FORMATS:
             s.date_format = data["date_format"]
-        if str(data.get("default_currency", "")).strip():
+        if str(data.get("default_currency", "")).strip().upper() in CURRENCIES:
             s.default_currency = str(data["default_currency"]).strip().upper()
-        if str(data.get("default_country", "")).strip():
+        if str(data.get("default_country", "")).strip().upper() in COUNTRIES:
             s.default_country = str(data["default_country"]).strip().upper()
         if data.get("sort_by") in ("dueDate", "paidDate", "description"):
             s.sort_by = data["sort_by"]
