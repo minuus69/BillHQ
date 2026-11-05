@@ -86,16 +86,6 @@ def test_creating_files_keeps_whatever_is_already_there(tmp_path):
     assert [b.description for b in load_bills(tmp_path / "data.csv")] == ["mine"]
 
 
-def test_old_files_count_once_converted(tmp_path):
-    (tmp_path / "data.csv").write_text("description,dName,cName\nAbo,Swisscom,Max\n", encoding="utf-8")
-    (tmp_path / "debitorList.csv").write_text("dName\nSwisscom\n", encoding="utf-8")
-    (tmp_path / "creditorList.csv").write_text("cName\nMax\n", encoding="utf-8")
-    core = start()
-    core.set_data_folder(str(tmp_path))
-    assert (core.bills[0].recipient_name, core.bills[0].payer_name) == ("Swisscom", "Max")
-    assert core.missing_files() == []
-
-
 def test_reload_picks_up_files_put_there_by_hand(isolated_home):
     core = start()
     save_bills(core.data_folder / "data.csv", [Bill(description="copied")])

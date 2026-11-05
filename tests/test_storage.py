@@ -9,7 +9,7 @@ import pytest
 from appdata import csvparser
 from appdata.csvparser import (
     RECIPIENT_TEMPLATE_COLUMNS, PAYER_TEMPLATE_COLUMNS, Bill, Settings, load_bills, load_settings,
-    migrate_old_files, read_rows, save_bills, save_settings, sort_bills,
+    read_rows, save_bills, save_settings, sort_bills,
     write_rows,
 )
 
@@ -136,76 +136,3 @@ def test_stored_sort_settings_still_work(tmp_path, stored, expected):
     bills = [Bill(description="a", due_date="2030-02-01", paid_date="2030-01-01"),
              Bill(description="b", due_date="2030-01-01", paid_date="2030-02-01")]
     assert [b.description for b in sort_bills(bills, settings.sort_by)] == expected
-
-
-OLD_BILLS = """description,dueDate,paidDate,paidWith,paidChecked,bAmount,bCurrency,bAccount,\
-bReference,note,dName,dStreet,dBuildingNr,dPostalCode,dCity,dCountry,cName,cStreet,cBuildingNr,\
-cPostalCode,cCity,cCountry,privateNote
-"Abo, Monat",2030-01-01,,,False,79.90,CHF,CH93,,,Swisscom AG,Weg,6,3048,Worblaufen,CH,\
-Max Müller,Musterweg,69,8000,Zürich,CH,geheim
-"""
-OLD_RECIPIENTS = """description,amount,currency,account,dName,dStreet,dBuildingNr,dPostalCode,\
-dCity,dCountry
-Strom,85.40,CHF,,EWZ,Technoparkstrasse,1,8005,Zürich,CH
-"""
-OLD_PAYERS = "cName,cStreet,cBuildingNr,cPostalCode,cCity,cCountry\nMax Müller,Weg,1,8000,Zürich,CH\n"
-
-
-def write_old_files(folder):
-    folder.mkdir(exist_ok=True)
-    (folder / "data.csv").write_text(OLD_BILLS, encoding="utf-8")
-    (folder / "debitorList.csv").write_text(OLD_RECIPIENTS, encoding="utf-8")
-    (folder / "creditorList.csv").write_text(OLD_PAYERS, encoding="utf-8")
-
-
-def test_old_files_are_converted_with_backups(tmp_path):
-    write_old_files(tmp_path)
-    migrate_old_files(tmp_path)
-
-    bill = load_bills(tmp_path / "data.csv")[0]
-    assert bill.description == "Abo, Monat"
-    assert bill.recipient_name == "Swisscom AG"
-    assert bill.payer_name == "Max Müller"
-    assert bill.private_note == "geheim"
-    assert read_rows(tmp_path / "recipientList.csv",
-                     RECIPIENT_TEMPLATE_COLUMNS)[0]["recipient_name"] == "EWZ"
-    assert read_rows(tmp_path / "payerList.csv",
-                     PAYER_TEMPLATE_COLUMNS)[0]["payer_name"] == "Max Müller"
-
-    assert not (tmp_path / "debitorList.csv").exists()
-    assert not (tmp_path / "creditorList.csv").exists()
-    assert (tmp_path / "data.csv.pre-rename.bak").read_text(encoding="utf-8") == OLD_BILLS
-    assert (tmp_path / "debitorList.csv.pre-rename.bak").read_text(
-        encoding="utf-8") == OLD_RECIPIENTS
-    assert (tmp_path / "creditorList.csv.pre-rename.bak").read_text(
-        encoding="utf-8") == OLD_PAYERS
-
-
-def test_conversion_only_happens_once(tmp_path):
-    write_old_files(tmp_path)
-    migrate_old_files(tmp_path)
-    save_bills(tmp_path / "data.csv", [bill("changed later")])
-    migrate_old_files(tmp_path)
-    assert load_bills(tmp_path / "data.csv")[0].description == "changed later"
-    assert (tmp_path / "data.csv.pre-rename.bak").read_text(encoding="utf-8") == OLD_BILLS
-
-
-def test_old_list_is_left_alone_when_new_one_exists(tmp_path):
-    write_old_files(tmp_path)
-    write_rows(tmp_path / "payerList.csv", PAYER_TEMPLATE_COLUMNS, [{"payer_name": "Neu"}])
-    migrate_old_files(tmp_path)
-    assert (tmp_path / "creditorList.csv").read_text(encoding="utf-8") == OLD_PAYERS
-    assert read_rows(tmp_path / "payerList.csv",
-                     PAYER_TEMPLATE_COLUMNS)[0]["payer_name"] == "Neu"
-
-
-def test_failed_conversion_keeps_the_original(tmp_path, monkeypatch):
-    write_old_files(tmp_path)
-
-    def explode(src, dst):
-        raise OSError("nope")
-
-    monkeypatch.setattr(csvparser.os, "replace", explode)
-    with pytest.raises(OSError):
-        migrate_old_files(tmp_path)
-    assert (tmp_path / "data.csv").read_text(encoding="utf-8") == OLD_BILLS

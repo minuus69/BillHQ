@@ -55,12 +55,6 @@ REQUIRED_FIELDS = [
     "recipient_name", "recipient_postal_code", "recipient_city", "recipient_country",
 ]
 
-# Older versions called these d* and c*, in debitorList.csv and creditorList.csv.
-LEGACY_COLUMNS = {old: new for new, old in (
-    *((c, "d" + c[1:]) for c in _RECIPIENT_COLUMNS.values()),
-    *((c, "c" + c[1:]) for c in _PAYER_COLUMNS.values()),
-)}
-
 # translation keys for field labels (used in validation errors)
 FIELD_LABELS = {
     "description": "f_description", "due_date": "f_due_date", "paid_date": "f_paid_date",
@@ -348,28 +342,6 @@ def save_settings(path: Path, s: Settings) -> None:
 # --------------------------------------------------------------------------- #
 # Data folder setup
 # --------------------------------------------------------------------------- #
-def _migrate_csv(old: Path, new: Path) -> None:
-    """Convert a file with the old d*/c* columns, keeping the original as a backup."""
-    if not old.exists() or (old != new and new.exists()):
-        return
-    with open(old, newline="", encoding="utf-8") as fh:
-        rows = list(csv.reader(fh))
-    if not rows or not LEGACY_COLUMNS.keys() & set(rows[0]):
-        return
-    shutil.copy2(old, old.with_name(old.name + ".pre-rename.bak"))
-    rows[0] = [LEGACY_COLUMNS.get(column, column) for column in rows[0]]
-    with _atomic_open(new) as fh:
-        csv.writer(fh, lineterminator="\r\n").writerows(rows)
-    if old != new:
-        old.unlink()
-
-
-def migrate_old_files(folder: Path) -> None:
-    _migrate_csv(folder / "data.csv", folder / "data.csv")
-    _migrate_csv(folder / "debitorList.csv", folder / "recipientList.csv")
-    _migrate_csv(folder / "creditorList.csv", folder / "payerList.csv")
-
-
 def missing_data_files(folder: Path, templates: Path) -> list[str]:
     """The starter files that the data folder doesn't have (yet)."""
     return sorted(file.name for file in templates.glob("*.csv") if not (folder / file.name).exists())
