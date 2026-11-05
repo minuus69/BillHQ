@@ -49,7 +49,7 @@ If `XDG_CONFIG_HOME` is set, the settings and log are in `$XDG_CONFIG_HOME/BillH
 
 BillHQ never creates or copies anything in the data folder on its own. When you create or open bills and files are missing from it, it asks whether to create them there from `templates/`. Files that are already there are kept.
 
-Changing the folder doesn't move your files, so copy them over yourself if you want to keep using them. CSV files from older versions are converted when BillHQ reads them.
+Changing the folder doesn't move your files, so copy them over yourself if you want to keep using them.
 
 ## Project layout
 ```
@@ -61,7 +61,7 @@ templates/        starter CSV files for a new data folder
 tests/            pytest suite
 ```
 
-**Recipient** (`r*` columns, `recipientList.csv`) gets the money, "Payable to" on a QR bill. **Payer** (`p*` columns, `payerList.csv`) pays, "Payable by". Files from older versions (`d*`/`c*` columns, `debitorList.csv`/`creditorList.csv`) convert automatically at startup, and the originals are kept as `*.pre-rename.bak`.
+**Recipient** (`r*` columns, `recipientList.csv`) gets the money, "Payable to" on a QR bill. **Payer** (`p*` columns, `payerList.csv`) pays, "Payable by".
 
 ## Usage
 | Key     | Action      |

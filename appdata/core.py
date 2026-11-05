@@ -5,7 +5,7 @@ from pathlib import Path
 
 from appdata.csvparser import (
     PAYER_TEMPLATE_COLUMNS, RECIPIENT_TEMPLATE_COLUMNS, Bill, create_missing_files, load_bills,
-    load_settings, migrate_old_files, missing_data_files, read_rows, save_bills, save_settings,
+    load_settings, missing_data_files, read_rows, save_bills, save_settings,
     sort_bills, write_rows,
 )
 from appdata.languages import set_language
@@ -49,7 +49,6 @@ class Core:
         Missing files count as empty, and nothing new gets created here."""
         if folder.exists() and not folder.is_dir():
             raise NotADirectoryError(f"not a folder: {folder}")
-        migrate_old_files(folder)
         bills = load_bills(folder / "data.csv")
         recipients = read_rows(folder / "recipientList.csv", RECIPIENT_TEMPLATE_COLUMNS)
         payers = read_rows(folder / "payerList.csv", PAYER_TEMPLATE_COLUMNS)
